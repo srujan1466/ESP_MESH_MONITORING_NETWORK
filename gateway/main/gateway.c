@@ -464,7 +464,7 @@ static void build_status_json(char *buf, size_t buf_len)
             "\"hop_count\":%d,"
             "\"rssi\":%d,"
             "\"peer_count\":%d,"
-            "\"uptime\":%u,"
+            "\"uptime\":%lu,"
             "\"air_quality_ppm\":%.2f,"
             "\"temperature\":%.1f,"
             "\"humidity\":%.1f,"
