@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Pollution Monitoring</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#111;
+color:white;
+}
+
+.card{
+background:#222;
+padding:20px;
+margin:20px;
+border-radius:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Industrial Pollution Dashboard</h1>
+
+<div class="card">
+
+<canvas id="airChart"></canvas>
+
+</div>
+
+<div class="card">
+
+<canvas id="noiseChart"></canvas>
+
+</div>
+
+<script>
+
+var airData={
+labels:[],
+datasets:[{
+label:"Air Quality",
+data:[],
+borderColor:"red"
+}]
+}
+
+var noiseData={
+labels:[],
+datasets:[{
+label:"Noise",
+data:[],
+borderColor:"yellow"
+}]
+}
+
+fetch("/")
+.then(res=>res.text())
+
+</script>
+
+</body>
+
+</html>

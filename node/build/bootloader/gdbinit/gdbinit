@@ -1,0 +1,2 @@
+source /home/srujan/Desktop/IP3/node/build/bootloader/gdbinit/symbols
+source /home/srujan/Desktop/IP3/node/build/bootloader/gdbinit/connect

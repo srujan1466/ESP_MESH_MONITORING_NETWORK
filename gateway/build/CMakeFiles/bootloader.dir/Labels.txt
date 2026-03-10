@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+/home/srujan/Desktop/IP3/gateway/build/CMakeFiles/bootloader
+/home/srujan/Desktop/IP3/gateway/build/CMakeFiles/bootloader.rule
+/home/srujan/Desktop/IP3/gateway/build/CMakeFiles/bootloader-complete.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/home/srujan/Desktop/IP3/gateway/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
