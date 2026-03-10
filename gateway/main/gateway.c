@@ -41,10 +41,10 @@
 #define TAG "GATEWAY"
 
 /* ─── WiFi Configuration ────────────────────────────────────────────────── */
-#define WIFI_SSID               "YOUR_WIFI_SSID"
-#define WIFI_PASS               "YOUR_WIFI_PASSWORD"
-#define SERVER_URL               "http://YOUR_SERVER_IP:5000/api/data"
-#define SERVER_NODE_STATUS_URL   "http://YOUR_SERVER_IP:5000/api/node_status"
+#define WIFI_SSID               "Srujuuu😜"
+#define WIFI_PASS               "14062006"
+#define SERVER_URL               "http://10.245.58.210:5000/api/data"
+#define SERVER_NODE_STATUS_URL   "http://10.245.58.210:5000/api/node_status"
 #define MAX_RETRY_CONNECT       10
 
 /* ─── ESP-NOW Configuration ─────────────────────────────────────────────── */
