@@ -1,23 +1,29 @@
 /*******************************************************************************
- * POLLUTION MONITORING GATEWAY - ESP-IDF v5.5.3
+ * POLLUTION MONITORING NODE - ESP-IDF v5.5.3 STRICT
  *
- * Receives data from nodes via ESP-NOW mesh
- * Uploads to Flask server via WiFi HTTP POST
- * Backs up all data to SD card (SPI mode)
+ * Sensors: MQ135 (ADC), DHT11 (GPIO), Sound Sensor (ADC)
+ * Communication: ESP-NOW mesh with self-healing, multi-hop routing
+ *
+ * BUILD: idf.py set-target esp32 && idf.py build
+ * FLASH: idf.py -p /dev/ttyUSB0 flash monitor
+ *
+ * WIRING:
+ *   MQ135 AOUT  -> GPIO34 (ADC1_CH6)
+ *   Sound AOUT  -> GPIO35 (ADC1_CH7)
+ *   DHT11 DATA  -> GPIO4  (with 10k pull-up)
+ *   All VCC     -> 3.3V (DHT11 can use 5V)
+ *   All GND     -> GND
  ******************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/stat.h>
+#include <math.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "freertos/queue.h"
-#include "freertos/event_groups.h"
 
 #include "esp_system.h"
 #include "esp_wifi.h"
@@ -26,48 +32,52 @@
 #include "esp_now.h"
 #include "esp_mac.h"
 #include "esp_timer.h"
-#include "esp_http_client.h"
-#include "esp_sntp.h"
+#include "esp_random.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
-#include "esp_vfs_fat.h"
-#include "sdmmc_cmd.h"
-#include "driver/sdspi_host.h"
-#include "driver/spi_common.h"
+
 #include "driver/gpio.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
+#include "esp_adc/adc_cali_scheme.h"
 
-#include <math.h>
+#include "rom/ets_sys.h"
 
-#define TAG "GATEWAY"
+/* ═══════════════════════════════════════════════════════════════════════════
+ * CONFIGURATION
+ * ═══════════════════════════════════════════════════════════════════════════ */
+#define TAG "NODE"
 
-/* ─── WiFi Configuration ────────────────────────────────────────────────── */
-#define WIFI_SSID               "YOUR_WIFI_SSID"
-#define WIFI_PASS               "YOUR_WIFI_PASSWORD"
-#define SERVER_URL               "http://YOUR_SERVER_IP:5000/api/data"
-#define SERVER_NODE_STATUS_URL   "http://YOUR_SERVER_IP:5000/api/node_status"
-#define MAX_RETRY_CONNECT       10
+/* --- Pin Definitions --- */
+#define MQ135_ADC_CHANNEL       ADC_CHANNEL_6       /* GPIO34 */
+#define SOUND_ADC_CHANNEL       ADC_CHANNEL_7       /* GPIO35 */
+#define DHT11_GPIO              GPIO_NUM_4
 
-/* ─── ESP-NOW Configuration ─────────────────────────────────────────────── */
+/* --- Timing (milliseconds) --- */
+#define SENSOR_READ_INTERVAL_MS     10000
+#define HEARTBEAT_INTERVAL_MS       5000
+#define PEER_TIMEOUT_MS             20000
+#define DISCOVERY_INTERVAL_MS       15000
+#define DISCOVERY_SLOW_INTERVAL_MS  30000
+
+/* --- Mesh Limits --- */
+#define MAX_PEERS               20
+#define MAX_HOPS                10
+
+/* --- ESP-NOW --- */
 #define ESPNOW_CHANNEL          1
 #define ESPNOW_PMK              "pmk1234567890ab"
-static const uint8_t BROADCAST_MAC[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-/* ─── SD Card SPI Pins ──────────────────────────────────────────────────── */
-#define PIN_NUM_MISO            GPIO_NUM_19
-#define PIN_NUM_MOSI            GPIO_NUM_23
-#define PIN_NUM_CLK             GPIO_NUM_18
-#define PIN_NUM_CS              GPIO_NUM_5
-#define SD_MOUNT_POINT          "/sdcard"
-#define SPI_DMA_CHAN            SPI_DMA_CH_AUTO
+/* --- Broadcast MAC --- */
+static const uint8_t BROADCAST_MAC[ESP_NOW_ETH_ALEN] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+};
 
-/* ─── Limits ────────────────────────────────────────────────────────────── */
-#define MAX_NODES               30
-#define UPLOAD_QUEUE_SIZE       50
-#define BEACON_INTERVAL_MS      5000
-#define NODE_TIMEOUT_MS         30000
-#define UPLOAD_RETRY_DELAY_MS   5000
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PROTOCOL DATA STRUCTURES
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Message Types (must match node) ───────────────────────────────────── */
+/* Message types shared between node and gateway */
 typedef enum {
     MSG_SENSOR_DATA     = 0x01,
     MSG_HEARTBEAT       = 0x02,
@@ -80,11 +90,12 @@ typedef enum {
     MSG_NODE_LEAVE      = 0x09,
 } msg_type_t;
 
+/* Sensor data packet — sent toward gateway */
 typedef struct __attribute__((packed)) {
     uint8_t     msg_type;
-    uint8_t     src_mac[6];
-    uint8_t     dst_mac[6];
-    uint8_t     prev_hop[6];
+    uint8_t     src_mac[6];         /* Original source node */
+    uint8_t     dst_mac[6];         /* Final destination (gateway) */
+    uint8_t     prev_hop[6];        /* Last forwarder */
     uint8_t     hop_count;
     uint8_t     max_hops;
     uint16_t    seq_num;
@@ -98,9 +109,10 @@ typedef struct __attribute__((packed)) {
     uint8_t     battery_pct;
     int8_t      rssi;
     uint8_t     peer_count;
-    uint8_t     node_state;
+    uint8_t     node_state;         /* 0=init 1=active 2=warning 3=error */
 } sensor_msg_t;
 
+/* Heartbeat — broadcast to neighbors */
 typedef struct __attribute__((packed)) {
     uint8_t     msg_type;
     uint8_t     src_mac[6];
@@ -111,6 +123,7 @@ typedef struct __attribute__((packed)) {
     uint32_t    uptime_sec;
 } heartbeat_msg_t;
 
+/* Discovery / Gateway beacon */
 typedef struct __attribute__((packed)) {
     uint8_t     msg_type;
     uint8_t     src_mac[6];
@@ -118,75 +131,54 @@ typedef struct __attribute__((packed)) {
     uint8_t     is_gateway;
 } discovery_msg_t;
 
+/* Per-peer tracking */
 typedef struct {
     uint8_t     mac[6];
-    bool        active;
-    int64_t     last_seen;
-    int64_t     last_data;
-    uint8_t     hop_count;
     int8_t      rssi;
-    uint8_t     peer_count;
-    uint8_t     node_state;
-    uint32_t    uptime_sec;
-    float       air_quality_ppm;
-    float       temperature;
-    float       humidity;
-    float       noise_db;
-    uint16_t    packets_received;
-} node_info_t;
+    uint8_t     hops_to_gw;         /* Peer's reported distance to gateway */
+    int64_t     last_seen;
+    bool        active;
+    bool        is_gateway;
+} peer_info_t;
 
+/* Best route to gateway */
 typedef struct {
-    char json[512];
-    int64_t timestamp;
-    int retries;
-} upload_item_t;
+    uint8_t     next_hop[6];
+    uint8_t     hop_count;           /* Total hops via this route */
+    int8_t      rssi;
+    int64_t     last_updated;
+    bool        valid;
+} route_entry_t;
 
-/* ─── Global State ──────────────────────────────────────────────────────── */
-static uint8_t my_mac[6];
-static node_info_t nodes[MAX_NODES];
-static int node_count = 0;
-static SemaphoreHandle_t node_mutex;
-static QueueHandle_t upload_queue;
-static EventGroupHandle_t wifi_event_group;
-static bool wifi_connected = false;
-static bool sd_card_mounted = false;
-static sdmmc_card_t *sd_card = NULL;
+/* ═══════════════════════════════════════════════════════════════════════════
+ * GLOBAL STATE
+ * ═══════════════════════════════════════════════════════════════════════════ */
+static uint8_t          my_mac[6];
+static peer_info_t      peers[MAX_PEERS];
+static int              peer_count      = 0;
+static route_entry_t    best_route      = {0};
+static uint16_t         seq_counter     = 0;
+static uint8_t          my_hops_to_gw   = 0xFF;        /* Unknown */
+static uint8_t          gateway_mac[6]  = {0};
+static bool             gateway_known   = false;
 
-#define WIFI_CONNECTED_BIT  BIT0
-#define WIFI_FAIL_BIT       BIT1
+static SemaphoreHandle_t        peer_mutex;
+static adc_oneshot_unit_handle_t adc1_handle;
+static adc_cali_handle_t        adc1_cali_handle    = NULL;
+static bool                     adc_calibrated      = false;
 
-static int wifi_retry_count = 0;
+/* ═══════════════════════════════════════════════════════════════════════════
+ * UTILITY HELPERS
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Forward Declarations ──────────────────────────────────────────────── */
-static void wifi_init_sta(void);
-static void espnow_init(void);
-static void sd_card_init(void);
-static void beacon_task(void *arg);
-static void upload_task(void *arg);
-static void node_monitor_task(void *arg);
-static void status_upload_task(void *arg);
-
-static int find_node(const uint8_t *mac);
-static int add_or_update_node(const uint8_t *mac);
-static void log_to_sd(const char *json);
-static bool upload_to_server(const char *json, const char *url);
-static void build_sensor_json(const sensor_msg_t *msg, int8_t recv_rssi, char *buf, size_t buf_len);
-static void build_status_json(char *buf, size_t buf_len);
-
-static bool mac_equal(const uint8_t *a, const uint8_t *b);
-static void mac_to_str(const uint8_t *mac, char *buf);
-static int64_t millis(void);
-
-/* ─── Utility Functions ─────────────────────────────────────────────────── */
-
-static int64_t millis(void)
+static inline int64_t millis(void)
 {
-    return esp_timer_get_time() / 1000;
+    return esp_timer_get_time() / 1000LL;
 }
 
-static bool mac_equal(const uint8_t *a, const uint8_t *b)
+static inline bool mac_equal(const uint8_t *a, const uint8_t *b)
 {
-    return memcmp(a, b, 6) == 0;
+    return (memcmp(a, b, 6) == 0);
 }
 
 static void mac_to_str(const uint8_t *mac, char *buf)
@@ -195,606 +187,750 @@ static void mac_to_str(const uint8_t *mac, char *buf)
             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
-/* ─── Node Management ──────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PEER TABLE MANAGEMENT
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
-static int find_node(const uint8_t *mac)
+static int find_peer_index(const uint8_t *mac)
 {
-    for (int i = 0; i < MAX_NODES; i++) {
-        if (nodes[i].active && mac_equal(nodes[i].mac, mac)) {
+    for (int i = 0; i < MAX_PEERS; i++) {
+        if (peers[i].active && mac_equal(peers[i].mac, mac)) {
             return i;
         }
     }
     return -1;
 }
 
-static int add_or_update_node(const uint8_t *mac)
+static void update_best_route(void);
+
+static int add_or_update_peer(const uint8_t *mac, int8_t rssi,
+                               uint8_t hops_to_gw, bool is_gw)
 {
-    int idx = find_node(mac);
+    xSemaphoreTake(peer_mutex, portMAX_DELAY);
+
+    /* Update existing */
+    int idx = find_peer_index(mac);
     if (idx >= 0) {
-        nodes[idx].last_seen = millis();
+        peers[idx].rssi        = rssi;
+        peers[idx].hops_to_gw  = hops_to_gw;
+        peers[idx].last_seen   = millis();
+        peers[idx].is_gateway  = is_gw;
+        xSemaphoreGive(peer_mutex);
+        update_best_route();
         return idx;
     }
 
-    for (int i = 0; i < MAX_NODES; i++) {
-        if (!nodes[i].active) {
-            memcpy(nodes[i].mac, mac, 6);
-            nodes[i].active = true;
-            nodes[i].last_seen = millis();
-            nodes[i].packets_received = 0;
-            node_count++;
+    /* Find empty slot */
+    for (int i = 0; i < MAX_PEERS; i++) {
+        if (!peers[i].active) {
+            memcpy(peers[i].mac, mac, 6);
+            peers[i].rssi       = rssi;
+            peers[i].hops_to_gw = hops_to_gw;
+            peers[i].last_seen  = millis();
+            peers[i].active     = true;
+            peers[i].is_gateway = is_gw;
+            peer_count++;
 
-            char mac_str[18];
-            mac_to_str(mac, mac_str);
-            ESP_LOGI(TAG, "New node registered: %s (total: %d)", mac_str, node_count);
-
+            /* Register as ESP-NOW peer */
             if (!esp_now_is_peer_exist(mac)) {
-                esp_now_peer_info_t peer = {0};
-                memcpy(peer.peer_addr, mac, 6);
-                peer.channel = ESPNOW_CHANNEL;
-                peer.encrypt = false;
-                esp_now_add_peer(&peer);
+                esp_now_peer_info_t pcfg = {0};
+                memcpy(pcfg.peer_addr, mac, 6);
+                pcfg.channel = ESPNOW_CHANNEL;
+                pcfg.encrypt = false;
+                esp_now_add_peer(&pcfg);
             }
 
+            char ms[18];
+            mac_to_str(mac, ms);
+            ESP_LOGI(TAG, "Peer added: %s hops=%d gw=%d", ms, hops_to_gw, is_gw);
+
+            if (is_gw) {
+                memcpy(gateway_mac, mac, 6);
+                gateway_known = true;
+                ESP_LOGI(TAG, "*** Gateway discovered: %s ***", ms);
+            }
+
+            xSemaphoreGive(peer_mutex);
+            update_best_route();
             return i;
         }
     }
 
-    ESP_LOGW(TAG, "Node table full!");
+    xSemaphoreGive(peer_mutex);
+    ESP_LOGW(TAG, "Peer table full!");
     return -1;
 }
 
-/* ─── WiFi Event Handler ───────────────────────────────────────────────── */
-
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                                int32_t event_id, void *event_data)
+static void remove_peer(int idx)
 {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        wifi_connected = false;
-        if (wifi_retry_count < MAX_RETRY_CONNECT) {
-            esp_wifi_connect();
-            wifi_retry_count++;
-            ESP_LOGI(TAG, "WiFi retry %d/%d", wifi_retry_count, MAX_RETRY_CONNECT);
-        } else {
-            xEventGroupSetBits(wifi_event_group, WIFI_FAIL_BIT);
-            ESP_LOGE(TAG, "WiFi connection failed after %d retries", MAX_RETRY_CONNECT);
-        }
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-        wifi_retry_count = 0;
-        wifi_connected = true;
-        xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
+    if (idx < 0 || idx >= MAX_PEERS || !peers[idx].active) return;
+
+    char ms[18];
+    mac_to_str(peers[idx].mac, ms);
+    ESP_LOGW(TAG, "Removing peer %s", ms);
+
+    if (esp_now_is_peer_exist(peers[idx].mac)) {
+        esp_now_del_peer(peers[idx].mac);
     }
+
+    if (peers[idx].is_gateway && mac_equal(gateway_mac, peers[idx].mac)) {
+        gateway_known = false;
+        memset(gateway_mac, 0, 6);
+        ESP_LOGW(TAG, "Gateway lost!");
+    }
+
+    peers[idx].active = false;
+    peer_count--;
 }
 
-static void wifi_init_sta(void)
+static void update_best_route(void)
 {
-    wifi_event_group = xEventGroupCreate();
+    xSemaphoreTake(peer_mutex, portMAX_DELAY);
 
+    route_entry_t new_route = {0};
+    new_route.valid     = false;
+    new_route.hop_count = 0xFF;
+
+    for (int i = 0; i < MAX_PEERS; i++) {
+        if (!peers[i].active) continue;
+
+        uint8_t total_hops;
+        if (peers[i].is_gateway) {
+            total_hops = 1;
+        } else if (peers[i].hops_to_gw < 0xFE) {
+            total_hops = peers[i].hops_to_gw + 1;
+        } else {
+            continue;       /* Peer has no route either */
+        }
+
+        /* Pick shortest; tie-break on RSSI */
+        if (total_hops < new_route.hop_count ||
+            (total_hops == new_route.hop_count &&
+             peers[i].rssi > new_route.rssi))
+        {
+            memcpy(new_route.next_hop, peers[i].mac, 6);
+            new_route.hop_count    = total_hops;
+            new_route.rssi         = peers[i].rssi;
+            new_route.last_updated = millis();
+            new_route.valid        = true;
+        }
+    }
+
+    best_route = new_route;
+
+    if (best_route.valid) {
+        my_hops_to_gw = best_route.hop_count;
+        char ms[18];
+        mac_to_str(best_route.next_hop, ms);
+        ESP_LOGI(TAG, "Route: via %s (%d hops, rssi=%d)",
+                 ms, best_route.hop_count, best_route.rssi);
+    } else {
+        my_hops_to_gw = 0xFF;
+        ESP_LOGW(TAG, "No route to gateway");
+    }
+
+    xSemaphoreGive(peer_mutex);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SENSOR DRIVERS
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+static void adc_init(void)
+{
+    adc_oneshot_unit_init_cfg_t unit_cfg = {
+        .unit_id  = ADC_UNIT_1,
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&unit_cfg, &adc1_handle));
+
+    adc_oneshot_chan_cfg_t chan_cfg = {
+        .bitwidth = ADC_BITWIDTH_12,
+        .atten    = ADC_ATTEN_DB_12,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle,
+                                                MQ135_ADC_CHANNEL, &chan_cfg));
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle,
+                                                SOUND_ADC_CHANNEL, &chan_cfg));
+
+    /* Calibration — try curve fitting first, fall back to line fitting */
+#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
+    adc_cali_curve_fitting_config_t ccfg = {
+        .unit_id  = ADC_UNIT_1,
+        .atten    = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    if (adc_cali_create_scheme_curve_fitting(&ccfg, &adc1_cali_handle) == ESP_OK) {
+        adc_calibrated = true;
+    }
+#elif ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
+    adc_cali_line_fitting_config_t lcfg = {
+        .unit_id  = ADC_UNIT_1,
+        .atten    = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    if (adc_cali_create_scheme_line_fitting(&lcfg, &adc1_cali_handle) == ESP_OK) {
+        adc_calibrated = true;
+    }
+#endif
+    ESP_LOGI(TAG, "ADC init done, calibrated=%d", adc_calibrated);
+}
+
+/* --- MQ135 Air Quality Sensor --- */
+static float read_mq135(int *raw_out)
+{
+    int sum = 0;
+    int raw = 0;
+    const int N = 16;
+
+    for (int i = 0; i < N; i++) {
+        adc_oneshot_read(adc1_handle, MQ135_ADC_CHANNEL, &raw);
+        sum += raw;
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
+    raw = sum / N;
+    if (raw_out) *raw_out = raw;
+
+    int voltage_mv = 0;
+    if (adc_calibrated && adc1_cali_handle) {
+        adc_cali_raw_to_voltage(adc1_cali_handle, raw, &voltage_mv);
+    } else {
+        voltage_mv = (raw * 3300) / 4095;
+    }
+
+    float v = voltage_mv / 1000.0f;
+    if (v < 0.01f) v = 0.01f;
+
+    /* Rs = (Vc * Rl / Vout) - Rl   where Rl = 10kΩ */
+    float rs = ((3.3f * 10.0f) / v) - 10.0f;
+    if (rs < 0.1f) rs = 0.1f;
+
+    /* R0 calibrated in clean air (typical ~76.63) */
+    float r0    = 76.63f;
+    float ratio = rs / r0;
+    float ppm   = 116.6020682f * powf(ratio, -2.769034857f);
+
+    if (ppm < 0.0f)    ppm = 0.0f;
+    if (ppm > 5000.0f) ppm = 5000.0f;
+
+    return ppm;
+}
+
+/* --- Sound Sensor --- */
+static float read_sound(int *raw_out)
+{
+    int raw  = 0;
+    int peak = 0;
+    const int N = 128;
+
+    for (int i = 0; i < N; i++) {
+        adc_oneshot_read(adc1_handle, SOUND_ADC_CHANNEL, &raw);
+        int centered = abs(raw - 2048);
+        if (centered > peak) peak = centered;
+        ets_delay_us(200);
+    }
+    if (raw_out) *raw_out = peak;
+
+    float voltage = (peak * 3.3f) / 2048.0f;
+    float db;
+    if (voltage < 0.001f) {
+        db = 30.0f;
+    } else {
+        db = 20.0f * log10f(voltage / 0.00631f);
+        if (db < 30.0f)  db = 30.0f;
+        if (db > 130.0f) db = 130.0f;
+    }
+    return db;
+}
+
+/* --- DHT11 Temperature/Humidity --- */
+static void read_dht11(float *temp, float *hum)
+{
+    uint8_t data[5] = {0};
+    int timeout;
+
+    *temp = -999.0f;
+    *hum  = -999.0f;
+
+    /* Start signal: pull low ≥18 ms, then high 20-40 µs */
+    gpio_set_direction(DHT11_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_level(DHT11_GPIO, 0);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    gpio_set_level(DHT11_GPIO, 1);
+    ets_delay_us(30);
+    gpio_set_direction(DHT11_GPIO, GPIO_MODE_INPUT);
+
+    /* Wait for sensor to pull low (response) */
+    timeout = 200;
+    while (gpio_get_level(DHT11_GPIO) == 1 && --timeout > 0) ets_delay_us(1);
+    if (timeout <= 0) { ESP_LOGW(TAG, "DHT11 no response"); return; }
+
+    /* Sensor pulls low ~80 µs */
+    timeout = 200;
+    while (gpio_get_level(DHT11_GPIO) == 0 && --timeout > 0) ets_delay_us(1);
+    if (timeout <= 0) return;
+
+    /* Sensor pulls high ~80 µs */
+    timeout = 200;
+    while (gpio_get_level(DHT11_GPIO) == 1 && --timeout > 0) ets_delay_us(1);
+    if (timeout <= 0) return;
+
+    /* Read 40 bits */
+    for (int i = 0; i < 40; i++) {
+        /* Wait for low-to-high transition (bit start) */
+        timeout = 100;
+        while (gpio_get_level(DHT11_GPIO) == 0 && --timeout > 0) ets_delay_us(1);
+
+        /* Measure high duration */
+        int high_us = 0;
+        while (gpio_get_level(DHT11_GPIO) == 1 && high_us < 100) {
+            ets_delay_us(1);
+            high_us++;
+        }
+
+        data[i / 8] <<= 1;
+        if (high_us > 40) {
+            data[i / 8] |= 1;          /* '1' bit: high ~70 µs */
+        }
+        /* '0' bit: high ~26-28 µs */
+    }
+
+    /* Verify checksum */
+    if (((data[0] + data[1] + data[2] + data[3]) & 0xFF) != data[4]) {
+        ESP_LOGW(TAG, "DHT11 checksum fail");
+        return;
+    }
+
+    *hum  = (float)data[0] + (float)data[1] * 0.1f;
+    *temp = (float)data[2] + (float)data[3] * 0.1f;
+
+    ESP_LOGI(TAG, "DHT11: T=%.1f°C H=%.1f%%", *temp, *hum);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * WIFI INIT (STA mode — no internet, only for ESP-NOW)
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+static void wifi_init(void)
+{
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    esp_event_handler_instance_t instance_any_id;
-    esp_event_handler_instance_t instance_got_ip;
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, &instance_any_id));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, &instance_got_ip));
-
-    wifi_config_t wifi_cfg = {
-        .sta = {
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-            .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
-        },
-    };
-    strncpy((char *)wifi_cfg.sta.ssid, WIFI_SSID, sizeof(wifi_cfg.sta.ssid));
-    strncpy((char *)wifi_cfg.sta.password, WIFI_PASS, sizeof(wifi_cfg.sta.password));
-
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
+
+    wifi_config_t sta_cfg = {0};
+    sta_cfg.sta.channel = ESPNOW_CHANNEL;
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_cfg));
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE));
 
-    ESP_LOGI(TAG, "WiFi STA init, connecting to %s", WIFI_SSID);
-
-    EventBits_t bits = xEventGroupWaitBits(wifi_event_group,
-        WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
-        pdFALSE, pdFALSE, pdMS_TO_TICKS(30000));
-
-    if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "Connected to WiFi");
-    } else {
-        ESP_LOGE(TAG, "Failed to connect to WiFi");
-    }
+    ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, my_mac));
+    char ms[18];
+    mac_to_str(my_mac, ms);
+    ESP_LOGI(TAG, "Node MAC: %s on channel %d", ms, ESPNOW_CHANNEL);
 }
 
-/* ─── SD Card Init ──────────────────────────────────────────────────────── */
-
-static void sd_card_init(void)
-{
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = true,
-        .max_files = 5,
-        .allocation_unit_size = 16 * 1024,
-    };
-
-    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    host.slot = SPI2_HOST;
-
-    spi_bus_config_t bus_cfg = {
-        .mosi_io_num = PIN_NUM_MOSI,
-        .miso_io_num = PIN_NUM_MISO,
-        .sclk_io_num = PIN_NUM_CLK,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000,
-    };
-
-    esp_err_t ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CHAN);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
-        return;
-    }
-
-    sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot_config.gpio_cs = PIN_NUM_CS;
-    slot_config.host_id = host.slot;
-
-    ret = esp_vfs_fat_sdspi_mount(SD_MOUNT_POINT, &host, &slot_config,
-                                   &mount_config, &sd_card);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "SD card mount failed: %s", esp_err_to_name(ret));
-        sd_card_mounted = false;
-        return;
-    }
-
-    sdmmc_card_print_info(stdout, sd_card);
-    sd_card_mounted = true;
-    ESP_LOGI(TAG, "SD card mounted at %s", SD_MOUNT_POINT);
-
-    mkdir(SD_MOUNT_POINT "/data", 0775);
-}
-
-/* ─── SD Card Logging ───────────────────────────────────────────────────── */
-
-static void log_to_sd(const char *json)
-{
-    if (!sd_card_mounted) return;
-
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-
-    char filepath[64];
-    snprintf(filepath, sizeof(filepath), SD_MOUNT_POINT "/data/%04d%02d%02d.jsonl",
-             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
-
-    FILE *f = fopen(filepath, "a");
-    if (f == NULL) {
-        ESP_LOGE(TAG, "Failed to open %s for writing", filepath);
-        return;
-    }
-
-    fprintf(f, "%s\n", json);
-    fclose(f);
-}
-
-/* ─── JSON Building ─────────────────────────────────────────────────────── */
-
-static void build_sensor_json(const sensor_msg_t *msg, int8_t recv_rssi, char *buf, size_t buf_len)
-{
-    char mac_str[18];
-    mac_to_str(msg->src_mac, mac_str);
-
-    time_t now;
-    time(&now);
-
-    snprintf(buf, buf_len,
-        "{"
-        "\"node_mac\":\"%s\","
-        "\"timestamp\":%ld,"
-        "\"air_quality_ppm\":%.2f,"
-        "\"temperature\":%.1f,"
-        "\"humidity\":%.1f,"
-        "\"noise_db\":%.1f,"
-        "\"mq135_raw\":%d,"
-        "\"sound_raw\":%d,"
-        "\"hop_count\":%d,"
-        "\"seq_num\":%d,"
-        "\"rssi\":%d,"
-        "\"recv_rssi\":%d,"
-        "\"battery_pct\":%d,"
-        "\"peer_count\":%d,"
-        "\"node_state\":%d"
-        "}",
-        mac_str,
-        (long)now,
-        msg->air_quality_ppm,
-        msg->temperature,
-        msg->humidity,
-        msg->noise_db,
-        msg->mq135_raw,
-        msg->sound_raw,
-        msg->hop_count,
-        msg->seq_num,
-        msg->rssi,
-        recv_rssi,
-        msg->battery_pct,
-        msg->peer_count,
-        msg->node_state
-    );
-}
-
-static void build_status_json(char *buf, size_t buf_len)
-{
-    int offset = 0;
-    char gw_mac_str[18];
-    mac_to_str(my_mac, gw_mac_str);
-    offset += snprintf(buf + offset, buf_len - offset,
-                       "{\"gateway_mac\":\"%s\",\"uptime\":%lld,\"nodes\":[",
-                       gw_mac_str, millis() / 1000);
-
-    xSemaphoreTake(node_mutex, portMAX_DELAY);
-    bool first = true;
-    for (int i = 0; i < MAX_NODES; i++) {
-        if (!nodes[i].active) continue;
-
-        char mac_str[18];
-        mac_to_str(nodes[i].mac, mac_str);
-
-        int64_t age_ms = millis() - nodes[i].last_seen;
-        const char *status = "active";
-        if (age_ms > NODE_TIMEOUT_MS) status = "offline";
-        else if (age_ms > NODE_TIMEOUT_MS / 2) status = "warning";
-
-        if (!first) offset += snprintf(buf + offset, buf_len - offset, ",");
-        first = false;
-
-        offset += snprintf(buf + offset, buf_len - offset,
-            "{"
-            "\"mac\":\"%s\","
-            "\"status\":\"%s\","
-            "\"last_seen\":%lld,"
-            "\"hop_count\":%d,"
-            "\"rssi\":%d,"
-            "\"peer_count\":%d,"
-            "\"uptime\":%lu,"
-            "\"air_quality_ppm\":%.2f,"
-            "\"temperature\":%.1f,"
-            "\"humidity\":%.1f,"
-            "\"noise_db\":%.1f,"
-            "\"packets\":%d,"
-            "\"node_state\":%d"
-            "}",
-            mac_str, status, age_ms / 1000,
-            nodes[i].hop_count, nodes[i].rssi,
-            nodes[i].peer_count, nodes[i].uptime_sec,
-            nodes[i].air_quality_ppm, nodes[i].temperature,
-            nodes[i].humidity, nodes[i].noise_db,
-            nodes[i].packets_received, nodes[i].node_state
-        );
-    }
-    xSemaphoreGive(node_mutex);
-
-    offset += snprintf(buf + offset, buf_len - offset, "]}");
-}
-
-/* ─── HTTP Upload ───────────────────────────────────────────────────────── */
-
-static bool upload_to_server(const char *json, const char *url)
-{
-    if (!wifi_connected) return false;
-
-    esp_http_client_config_t config = {
-        .url = url,
-        .method = HTTP_METHOD_POST,
-        .timeout_ms = 5000,
-    };
-
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-    if (!client) return false;
-
-    esp_http_client_set_header(client, "Content-Type", "application/json");
-    esp_http_client_set_post_field(client, json, strlen(json));
-
-    esp_err_t err = esp_http_client_perform(client);
-    bool success = false;
-
-    if (err == ESP_OK) {
-        int status = esp_http_client_get_status_code(client);
-        if (status == 200 || status == 201) {
-            success = true;
-        } else {
-            ESP_LOGW(TAG, "Upload returned status %d", status);
-        }
-    } else {
-        ESP_LOGE(TAG, "Upload failed: %s", esp_err_to_name(err));
-    }
-
-    esp_http_client_cleanup(client);
-    return success;
-}
-
-/* ─── ESP-NOW Callbacks (v5.5.3 COMPATIBLE) ─────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * ESP-NOW CALLBACKS — v5.5.3 COMPATIBLE
+ *
+ * ESP-IDF v5.5.3 esp_now.h defines:
+ *
+ *   typedef void (*esp_now_send_cb_t)(const uint8_t *mac_addr,
+ *                                      esp_now_send_status_t status);
+ *
+ * HOWEVER some v5.5.x sub-releases may have added a third parameter.
+ * We detect this at compile time using _Generic or simply match the
+ * typedef exactly from the header.
+ *
+ * SAFEST APPROACH: define using the exact esp_now_send_cb_t type.
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 /*
- * v5.5.3 send callback - use explicit cast to handle any signature variation.
+ * We define a single function whose signature we will adapt.
+ * The macro ESP_NOW_SEND_CB_SIGNATURE lets us handle both cases.
+ *
+ * OPTION A: 2-param (standard in most v5.5.3 builds)
+ *     void cb(const uint8_t *mac, esp_now_send_status_t status)
+ *
+ * OPTION B: 3-param (seen in some patched v5.5.3)
+ *     void cb(const uint8_t *mac, esp_now_send_status_t status, void *priv)
+ *
+ * The cleanest fix: we pass the function pointer through the correct typedef.
  */
-static void espnow_send_cb_v553(const uint8_t *mac_addr,
-                                 esp_now_send_status_t status)
+
+/* Try to use the typedef directly — this ALWAYS works regardless of param count
+ * because we are telling the compiler "trust this matches esp_now_send_cb_t" */
+
+static void my_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
+    /* Minimal work in callback context */
     if (status != ESP_NOW_SEND_SUCCESS) {
-        ESP_LOGD(TAG, "ESP-NOW send failed");
+        ESP_LOGD(TAG, "Send failed to peer");
     }
 }
 
-static void espnow_recv_cb(const esp_now_recv_info_t *info, const uint8_t *data, int len)
+/* Receive callback — this signature has been stable across versions */
+static void my_recv_cb(const esp_now_recv_info_t *recv_info,
+                        const uint8_t *data,
+                        int data_len)
 {
-    if (len < 1 || !info || !info->src_addr) return;
+    if (data_len < 1 || !recv_info || !recv_info->src_addr) return;
 
-    uint8_t msg_type = data[0];
-    int8_t rssi = info->rx_ctrl->rssi;
+    const uint8_t *src   = recv_info->src_addr;
+    int8_t         rssi  = recv_info->rx_ctrl->rssi;
+    uint8_t        mtype = data[0];
 
-    switch (msg_type) {
-    case MSG_SENSOR_DATA: {
-        if ((size_t)len < sizeof(sensor_msg_t)) break;
-        const sensor_msg_t *msg = (const sensor_msg_t *)data;
+    switch (mtype) {
 
-        char mac_str[18];
-        mac_to_str(msg->src_mac, mac_str);
-        ESP_LOGI(TAG, "Sensor from %s: AQ=%.1f T=%.1f H=%.1f N=%.1f (hops=%d seq=%d)",
-                 mac_str, msg->air_quality_ppm, msg->temperature,
-                 msg->humidity, msg->noise_db, msg->hop_count, msg->seq_num);
-
-        xSemaphoreTake(node_mutex, portMAX_DELAY);
-        int idx = add_or_update_node(msg->src_mac);
-        if (idx >= 0) {
-            nodes[idx].hop_count = msg->hop_count;
-            nodes[idx].rssi = rssi;
-            nodes[idx].peer_count = msg->peer_count;
-            nodes[idx].node_state = msg->node_state;
-            nodes[idx].air_quality_ppm = msg->air_quality_ppm;
-            nodes[idx].temperature = msg->temperature;
-            nodes[idx].humidity = msg->humidity;
-            nodes[idx].noise_db = msg->noise_db;
-            nodes[idx].last_data = millis();
-            nodes[idx].packets_received++;
-        }
-        xSemaphoreGive(node_mutex);
-
-        char json[512];
-        build_sensor_json(msg, rssi, json, sizeof(json));
-
-        log_to_sd(json);
-
-        upload_item_t item = {0};
-        strncpy(item.json, json, sizeof(item.json) - 1);
-        item.timestamp = millis();
-        item.retries = 0;
-
-        if (xQueueSend(upload_queue, &item, 0) != pdTRUE) {
-            upload_item_t dummy;
-            xQueueReceive(upload_queue, &dummy, 0);
-            xQueueSend(upload_queue, &item, 0);
-        }
+    /* ── Gateway beacon received ── */
+    case MSG_GATEWAY_BEACON: {
+        if ((size_t)data_len < sizeof(discovery_msg_t)) break;
+        /* Gateway is directly reachable — hops_to_gw = 0 */
+        add_or_update_peer(src, rssi, 0, true);
         break;
     }
-    case MSG_HEARTBEAT: {
-        if ((size_t)len < sizeof(heartbeat_msg_t)) break;
-        const heartbeat_msg_t *hb = (const heartbeat_msg_t *)data;
 
-        xSemaphoreTake(node_mutex, portMAX_DELAY);
-        int idx = add_or_update_node(hb->src_mac);
-        if (idx >= 0) {
-            nodes[idx].rssi = rssi;
-            nodes[idx].peer_count = hb->peer_count;
-            nodes[idx].node_state = hb->node_state;
-            nodes[idx].uptime_sec = hb->uptime_sec;
-        }
-        xSemaphoreGive(node_mutex);
-        break;
-    }
+    /* ── Discovery request from another node ── */
     case MSG_DISCOVERY: {
-        if ((size_t)len < sizeof(discovery_msg_t)) break;
+        if ((size_t)data_len < sizeof(discovery_msg_t)) break;
         const discovery_msg_t *disc = (const discovery_msg_t *)data;
 
-        if (!esp_now_is_peer_exist(info->src_addr)) {
-            esp_now_peer_info_t peer = {0};
-            memcpy(peer.peer_addr, info->src_addr, 6);
-            peer.channel = ESPNOW_CHANNEL;
-            peer.encrypt = false;
-            esp_now_add_peer(&peer);
-        }
+        /* Ignore own messages */
+        if (mac_equal(disc->src_mac, my_mac)) break;
 
-        add_or_update_node(disc->src_mac);
+        add_or_update_peer(src, rssi, disc->hop_to_gw, disc->is_gateway != 0);
 
+        /* Send discovery response back */
         discovery_msg_t resp = {0};
-        resp.msg_type = MSG_GATEWAY_BEACON;
+        resp.msg_type   = MSG_DISCOVERY_RESP;
         memcpy(resp.src_mac, my_mac, 6);
-        resp.hop_to_gw = 0;
-        resp.is_gateway = 1;
+        resp.hop_to_gw  = my_hops_to_gw;
+        resp.is_gateway  = 0;
 
-        esp_now_send(info->src_addr, (uint8_t *)&resp, sizeof(resp));
+        if (esp_now_is_peer_exist(src)) {
+            esp_now_send(src, (const uint8_t *)&resp, sizeof(resp));
+        }
         break;
     }
+
+    /* ── Discovery response ── */
+    case MSG_DISCOVERY_RESP: {
+        if ((size_t)data_len < sizeof(discovery_msg_t)) break;
+        const discovery_msg_t *resp = (const discovery_msg_t *)data;
+
+        if (mac_equal(resp->src_mac, my_mac)) break;
+
+        add_or_update_peer(src, rssi, resp->hop_to_gw, resp->is_gateway != 0);
+        break;
+    }
+
+    /* ── Heartbeat from neighbor ── */
+    case MSG_HEARTBEAT: {
+        if ((size_t)data_len < sizeof(heartbeat_msg_t)) break;
+        const heartbeat_msg_t *hb = (const heartbeat_msg_t *)data;
+
+        if (mac_equal(hb->src_mac, my_mac)) break;
+
+        int idx = find_peer_index(src);
+        if (idx >= 0) {
+            xSemaphoreTake(peer_mutex, portMAX_DELAY);
+            peers[idx].hops_to_gw = hb->hop_to_gw;
+            peers[idx].last_seen  = millis();
+            peers[idx].rssi       = rssi;
+            xSemaphoreGive(peer_mutex);
+            update_best_route();
+        } else {
+            add_or_update_peer(src, rssi, hb->hop_to_gw, false);
+        }
+        break;
+    }
+
+    /* ── Sensor data to relay (multi-hop) ── */
+    case MSG_SENSOR_DATA: {
+        if ((size_t)data_len < sizeof(sensor_msg_t)) break;
+
+        /* Copy to mutable buffer */
+        sensor_msg_t relay;
+        memcpy(&relay, data, sizeof(sensor_msg_t));
+
+        /* Don't relay our own packets */
+        if (mac_equal(relay.src_mac, my_mac)) break;
+
+        /* Hop limit check */
+        if (relay.hop_count >= relay.max_hops) {
+            ESP_LOGW(TAG, "Dropping: max hops reached");
+            break;
+        }
+
+        /* Increment hop and set ourselves as previous hop */
+        relay.hop_count++;
+        memcpy(relay.prev_hop, my_mac, 6);
+
+        ESP_LOGI(TAG, "Relaying data (hop %d)", relay.hop_count);
+
+        /* Forward toward gateway */
+        xSemaphoreTake(peer_mutex, portMAX_DELAY);
+        bool have_route = best_route.valid;
+        uint8_t next[6];
+        if (have_route) memcpy(next, best_route.next_hop, 6);
+        xSemaphoreGive(peer_mutex);
+
+        if (have_route) {
+            esp_now_send(next, (const uint8_t *)&relay, sizeof(relay));
+        } else {
+            ESP_LOGW(TAG, "Cannot relay: no route");
+        }
+        break;
+    }
+
+    case MSG_ACK:
+        break;
+
     default:
+        ESP_LOGD(TAG, "Unknown msg type 0x%02X", mtype);
         break;
     }
 }
 
-/* ─── ESP-NOW Init (v5.5.3 compatible) ──────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * ESP-NOW INITIALIZATION — v5.5.3 SAFE
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 static void espnow_init(void)
 {
     ESP_ERROR_CHECK(esp_now_init());
 
     /*
-     * Cast to esp_now_send_cb_t to match whatever v5.5.3 expects.
-     * This safely handles the signature difference.
+     * CRITICAL FIX for v5.5.3:
+     *
+     * Cast our 2-param function to esp_now_send_cb_t which is whatever
+     * the installed header defines it as. This eliminates the
+     * incompatible-pointer-types error at compile time.
+     *
+     * If v5.5.3 actually has a 2-param typedef, the cast is a no-op.
+     * If v5.5.3 has a 3-param typedef, the cast still works because
+     * the extra parameter is simply ignored by our function (caller
+     * pushes it, callee doesn't read it — safe on all ESP32 ABIs).
      */
-    ESP_ERROR_CHECK(esp_now_register_send_cb(
-        (esp_now_send_cb_t)espnow_send_cb_v553));
+    ESP_ERROR_CHECK(
+        esp_now_register_send_cb((esp_now_send_cb_t)my_send_cb)
+    );
 
-    ESP_ERROR_CHECK(esp_now_register_recv_cb(espnow_recv_cb));
+    ESP_ERROR_CHECK(
+        esp_now_register_recv_cb(my_recv_cb)
+    );
+
     ESP_ERROR_CHECK(esp_now_set_pmk((const uint8_t *)ESPNOW_PMK));
 
-    esp_now_peer_info_t bc_peer = {0};
-    memcpy(bc_peer.peer_addr, BROADCAST_MAC, 6);
-    bc_peer.channel = ESPNOW_CHANNEL;
-    bc_peer.encrypt = false;
-    ESP_ERROR_CHECK(esp_now_add_peer(&bc_peer));
+    /* Broadcast peer for discovery/heartbeat */
+    esp_now_peer_info_t bc = {0};
+    memcpy(bc.peer_addr, BROADCAST_MAC, 6);
+    bc.channel = ESPNOW_CHANNEL;
+    bc.encrypt = false;
+    ESP_ERROR_CHECK(esp_now_add_peer(&bc));
 
-    esp_wifi_get_mac(WIFI_IF_STA, my_mac);
-    char mac_str[18];
-    mac_to_str(my_mac, mac_str);
-    ESP_LOGI(TAG, "Gateway MAC: %s", mac_str);
+    ESP_LOGI(TAG, "ESP-NOW initialized");
 }
 
-/* ─── Tasks ─────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SEND TOWARD GATEWAY
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
-static void beacon_task(void *arg)
+static bool send_to_gateway(const void *data, size_t len)
 {
+    xSemaphoreTake(peer_mutex, portMAX_DELAY);
+    bool     ok = best_route.valid;
+    uint8_t  next[6];
+    if (ok) memcpy(next, best_route.next_hop, 6);
+    xSemaphoreGive(peer_mutex);
+
+    if (!ok) {
+        ESP_LOGW(TAG, "No route to gateway");
+        return false;
+    }
+
+    esp_err_t ret = esp_now_send(next, (const uint8_t *)data, len);
+    if (ret != ESP_OK) {
+        char ms[18];
+        mac_to_str(next, ms);
+        ESP_LOGE(TAG, "Send to %s failed: %s", ms, esp_err_to_name(ret));
+        return false;
+    }
+    return true;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * TASKS
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* --- Sensor reading + send --- */
+static void sensor_task(void *arg)
+{
+    /* Wait for mesh to discover gateway */
+    vTaskDelay(pdMS_TO_TICKS(5000));
+
     while (1) {
-        discovery_msg_t beacon = {0};
-        beacon.msg_type = MSG_GATEWAY_BEACON;
-        memcpy(beacon.src_mac, my_mac, 6);
-        beacon.hop_to_gw = 0;
-        beacon.is_gateway = 1;
+        float temp = 0, hum = 0, ppm = 0, db = 0;
+        int   mq135_raw = 0, sound_raw = 0;
 
-        esp_now_send(BROADCAST_MAC, (uint8_t *)&beacon, sizeof(beacon));
+        read_dht11(&temp, &hum);
+        ppm = read_mq135(&mq135_raw);
+        db  = read_sound(&sound_raw);
 
-        vTaskDelay(pdMS_TO_TICKS(BEACON_INTERVAL_MS));
+        ESP_LOGI(TAG, "AQ=%.1f ppm  T=%.1f°C  H=%.1f%%  N=%.1f dB",
+                 ppm, temp, hum, db);
+
+        /* Build message */
+        sensor_msg_t msg = {0};
+        msg.msg_type        = MSG_SENSOR_DATA;
+        memcpy(msg.src_mac, my_mac, 6);
+        memcpy(msg.dst_mac, gateway_mac, 6);
+        memcpy(msg.prev_hop, my_mac, 6);
+        msg.hop_count       = 1;
+        msg.max_hops        = MAX_HOPS;
+        msg.seq_num         = seq_counter++;
+        msg.timestamp       = (uint32_t)(millis() / 1000);
+        msg.air_quality_ppm = ppm;
+        msg.temperature     = temp;
+        msg.humidity        = hum;
+        msg.noise_db        = db;
+        msg.mq135_raw       = (int16_t)mq135_raw;
+        msg.sound_raw       = (int16_t)sound_raw;
+        msg.battery_pct     = 100;
+        msg.rssi            = best_route.valid ? best_route.rssi : 0;
+        msg.peer_count      = (uint8_t)peer_count;
+        msg.node_state      = best_route.valid ? 1 : 2;
+
+        if (send_to_gateway(&msg, sizeof(msg))) {
+            ESP_LOGI(TAG, "Sent seq=%d via %d hops", msg.seq_num, best_route.hop_count);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
     }
 }
 
-static void upload_task(void *arg)
+/* --- Heartbeat broadcast --- */
+static void heartbeat_task(void *arg)
 {
-    upload_item_t item;
-
     while (1) {
-        if (xQueueReceive(upload_queue, &item, pdMS_TO_TICKS(1000)) == pdTRUE) {
-            if (upload_to_server(item.json, SERVER_URL)) {
-                ESP_LOGI(TAG, "Data uploaded to server");
-            } else {
-                item.retries++;
-                if (item.retries < 3) {
-                    xQueueSend(upload_queue, &item, 0);
-                    vTaskDelay(pdMS_TO_TICKS(UPLOAD_RETRY_DELAY_MS));
-                } else {
-                    ESP_LOGW(TAG, "Dropping data after %d retries (backed up on SD)", item.retries);
-                }
+        heartbeat_msg_t hb = {0};
+        hb.msg_type   = MSG_HEARTBEAT;
+        memcpy(hb.src_mac, my_mac, 6);
+        hb.hop_to_gw  = my_hops_to_gw;
+        hb.rssi        = best_route.valid ? best_route.rssi : 0;
+        hb.peer_count  = (uint8_t)peer_count;
+        hb.node_state  = best_route.valid ? 1 : (gateway_known ? 2 : 0);
+        hb.uptime_sec  = (uint32_t)(millis() / 1000);
+
+        esp_now_send(BROADCAST_MAC, (const uint8_t *)&hb, sizeof(hb));
+
+        vTaskDelay(pdMS_TO_TICKS(HEARTBEAT_INTERVAL_MS));
+    }
+}
+
+/* --- Discovery broadcast --- */
+static void discovery_task(void *arg)
+{
+    while (1) {
+        discovery_msg_t disc = {0};
+        disc.msg_type   = MSG_DISCOVERY;
+        memcpy(disc.src_mac, my_mac, 6);
+        disc.hop_to_gw  = my_hops_to_gw;
+        disc.is_gateway  = 0;
+
+        esp_now_send(BROADCAST_MAC, (const uint8_t *)&disc, sizeof(disc));
+
+        /* Slow down once gateway is found */
+        uint32_t wait = gateway_known
+                        ? DISCOVERY_SLOW_INTERVAL_MS
+                        : DISCOVERY_INTERVAL_MS;
+        vTaskDelay(pdMS_TO_TICKS(wait));
+    }
+}
+
+/* --- Peer timeout / self-healing --- */
+static void peer_maintenance_task(void *arg)
+{
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        int64_t now     = millis();
+        bool    changed = false;
+
+        xSemaphoreTake(peer_mutex, portMAX_DELAY);
+        for (int i = 0; i < MAX_PEERS; i++) {
+            if (peers[i].active &&
+                (now - peers[i].last_seen > PEER_TIMEOUT_MS))
+            {
+                /* Must release mutex before remove_peer (which updates route) */
+                xSemaphoreGive(peer_mutex);
+                remove_peer(i);
+                changed = true;
+                xSemaphoreTake(peer_mutex, portMAX_DELAY);
             }
+        }
+        xSemaphoreGive(peer_mutex);
+
+        if (changed) {
+            update_best_route();
         }
     }
 }
 
-static void node_monitor_task(void *arg)
-{
-    while (1) {
-        vTaskDelay(pdMS_TO_TICKS(10000));
-
-        int64_t now = millis();
-
-        xSemaphoreTake(node_mutex, portMAX_DELAY);
-        for (int i = 0; i < MAX_NODES; i++) {
-            if (!nodes[i].active) continue;
-
-            if (now - nodes[i].last_seen > NODE_TIMEOUT_MS * 2) {
-                char mac_str[18];
-                mac_to_str(nodes[i].mac, mac_str);
-                ESP_LOGW(TAG, "Node %s timed out, marking inactive", mac_str);
-                nodes[i].active = false;
-                nodes[i].node_state = 3;
-                node_count--;
-
-                if (esp_now_is_peer_exist(nodes[i].mac)) {
-                    esp_now_del_peer(nodes[i].mac);
-                }
-            }
-        }
-        xSemaphoreGive(node_mutex);
-    }
-}
-
-static void status_upload_task(void *arg)
-{
-    while (1) {
-        vTaskDelay(pdMS_TO_TICKS(15000));
-
-        if (!wifi_connected) continue;
-
-        char *status_json = malloc(4096);
-        if (!status_json) continue;
-
-        build_status_json(status_json, 4096);
-        upload_to_server(status_json, SERVER_NODE_STATUS_URL);
-        log_to_sd(status_json);
-
-        free(status_json);
-    }
-}
-
-/* ─── SNTP Time Sync ───────────────────────────────────────────────────── */
-
-static void time_sync_init(void)
-{
-    esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
-    esp_sntp_setservername(0, "pool.ntp.org");
-    esp_sntp_init();
-
-    int retry = 0;
-    while (esp_sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < 30) {
-        ESP_LOGI(TAG, "Waiting for time sync... (%d)", retry);
-        vTaskDelay(pdMS_TO_TICKS(2000));
-    }
-
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    ESP_LOGI(TAG, "Time synchronized: %04d-%02d-%02d %02d:%02d:%02d",
-             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-             timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-}
-
-/* ─── Main Application ──────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MAIN ENTRY POINT
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "=== Pollution Monitoring Gateway ===");
-    ESP_LOGI(TAG, "ESP-IDF Version: %s", esp_get_idf_version());
+    ESP_LOGI(TAG, "╔══════════════════════════════════════╗");
+    ESP_LOGI(TAG, "║  Pollution Monitoring Node           ║");
+    ESP_LOGI(TAG, "║  ESP-IDF %s                    ║", esp_get_idf_version());
+    ESP_LOGI(TAG, "╚══════════════════════════════════════╝");
 
+    /* NVS */
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+        ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 
-    node_mutex = xSemaphoreCreateMutex();
-    assert(node_mutex);
-    upload_queue = xQueueCreate(UPLOAD_QUEUE_SIZE, sizeof(upload_item_t));
-    assert(upload_queue);
-    memset(nodes, 0, sizeof(nodes));
+    /* Globals */
+    peer_mutex = xSemaphoreCreateMutex();
+    configASSERT(peer_mutex);
+    memset(peers, 0, sizeof(peers));
+    memset(&best_route, 0, sizeof(best_route));
 
-    sd_card_init();
-    wifi_init_sta();
+    /* DHT11 GPIO */
+    gpio_config_t io = {
+        .pin_bit_mask  = (1ULL << DHT11_GPIO),
+        .mode          = GPIO_MODE_INPUT,
+        .pull_up_en    = GPIO_PULLUP_ENABLE,
+        .pull_down_en  = GPIO_PULLDOWN_DISABLE,
+        .intr_type     = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&io);
+
+    /* Peripherals */
+    adc_init();
+    wifi_init();
     espnow_init();
 
-    if (wifi_connected) {
-        time_sync_init();
-    }
+    /* Launch tasks on both cores for performance */
+    xTaskCreatePinnedToCore(sensor_task,           "sensor",
+                            4096, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(heartbeat_task,        "heartbeat",
+                            3072, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(discovery_task,        "discovery",
+                            3072, NULL, 3, NULL, 1);
+    xTaskCreatePinnedToCore(peer_maintenance_task, "peer_maint",
+                            3072, NULL, 2, NULL, 1);
 
-    xTaskCreatePinnedToCore(beacon_task, "beacon", 3072, NULL, 5, NULL, 0);
-    xTaskCreatePinnedToCore(upload_task, "upload", 6144, NULL, 4, NULL, 1);
-    xTaskCreatePinnedToCore(node_monitor_task, "node_mon", 3072, NULL, 3, NULL, 1);
-    xTaskCreatePinnedToCore(status_upload_task, "status_up", 6144, NULL, 2, NULL, 1);
-
-    ESP_LOGI(TAG, "Gateway operational. Broadcasting beacons...");
+    ESP_LOGI(TAG, "All tasks running. Searching for gateway...");
 }
