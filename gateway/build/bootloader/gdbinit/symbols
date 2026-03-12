@@ -22,4 +22,4 @@ set confirm off
 set confirm on
 
 # Load application symbols
-file /home/srujan/Desktop/IP3/gateway/build/bootloader/bootloader.elf
+file /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/gateway/build/bootloader/bootloader.elf

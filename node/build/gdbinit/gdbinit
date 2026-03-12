@@ -1,2 +1,2 @@
-source /home/srujan/Desktop/IP3/node/build/gdbinit/symbols
-source /home/srujan/Desktop/IP3/node/build/gdbinit/connect
+source /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/gdbinit/symbols
+source /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/gdbinit/connect

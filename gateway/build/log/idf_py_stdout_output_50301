@@ -1,0 +1,381 @@
+Command: /home/srujan/.espressif/python_env/idf5.5_py3.13_env/bin/python /home/srujan/.espressif/v5.5.3/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB0 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/gateway/build/gateway.elf /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/gateway/build/bootloader/bootloader.elf -m '/home/srujan/.espressif/python_env/idf5.5_py3.13_env/bin/python' '/home/srujan/.espressif/v5.5.3/esp-idf/tools/idf.py'
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6280
+load:0x40078000,len:15864
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v5.5.3-dirty 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Mar 12 2026 23:25:27[0m
+[0;32mI (28) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v3.1[0m
+[0;32mI (32) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (36) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (43) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (50) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (76) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=19194h (102804) map[0m
+[0;32mI (122) esp_image: segment 1: paddr=000291bc vaddr=3ffb0000 size=04358h ( 17240) load[0m
+[0;32mI (128) esp_image: segment 2: paddr=0002d51c vaddr=40080000 size=02afch ( 11004) load[0m
+[0;32mI (133) esp_image: segment 3: paddr=00030020 vaddr=400d0020 size=83170h (536944) map[0m
+[0;32mI (317) esp_image: segment 4: paddr=000b3198 vaddr=40082afc size=15494h ( 87188) load[0m
+[0;32mI (351) esp_image: segment 5: paddr=000c8634 vaddr=50000000 size=00020h (    32) load[0m
+[0;32mI (363) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (363) boot: Disabling RNG early entropy source...[0m
+[0;32mI (373) cpu_start: Multicore app[0m
+[0;32mI (382) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (382) cpu_start: Pro cpu start user code[0m
+[0;32mI (382) cpu_start: cpu freq: 240000000 Hz[0m
+[0;32mI (384) app_init: Application information:[0m
+[0;32mI (388) app_init: Project name:     node[0m
+[0;32mI (391) app_init: App version:      a754113-dirty[0m
+[0;32mI (396) app_init: Compile time:     Mar 12 2026 23:25:17[0m
+[0;32mI (401) app_init: ELF file SHA256:  af019e6ea...[0m
+[0;32mI (405) app_init: ESP-IDF:          v5.5.3-dirty[0m
+[0;32mI (409) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (413) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (417) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (421) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (428) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (432) heap_init: At 3FFB88D8 len 00027728 (157 KiB): DRAM[0m
+[0;32mI (438) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (443) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (449) heap_init: At 40097F90 len 00008070 (32 KiB): IRAM[0m
+[0;32mI (455) spi_flash: detected chip: generic[0m
+[0;32mI (458) spi_flash: flash io: dio[0m
+[0;33mW (461) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (474) main_task: Started on CPU0[0m
+[0;32mI (477) main_task: Calling app_main()[0m
+[0;32mI (479) NODE: ╔══════════════════════════════════════╗[0m
+[0;32mI (491) NODE: ║  Pollution Monitoring Node           ║[0m
+[0;32mI (496) NODE: ║  ESP-IDF v5.5.3-dirty                    ║[0m
+[0;32mI (502) NODE: ╚══════════════════════════════════════╝[0m
+[0;32mI (539) NODE: ADC init done, calibrated=1[0m
+[0;32mI (543) wifi:wifi driver task: 3ffc0728, prio:23, stack:6656, core=0[0m
+[0;32mI (557) wifi:wifi firmware version: 4df78f2[0m
+[0;32mI (557) wifi:wifi certification version: v7.0[0m
+[0;32mI (557) wifi:config NVS flash: enabled[0m
+[0;32mI (557) wifi:config nano formatting: disabled[0m
+[0;32mI (562) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (566) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (570) wifi:Init management short buffer num: 32[0m
+[0;32mI (575) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (579) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (583) wifi:Init static rx buffer num: 10[0m
+[0;32mI (587) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (592) wifi_init: rx ba win: 6[0m
+[0;32mI (593) wifi_init: accept mbox: 6[0m
+[0;32mI (596) wifi_init: tcpip mbox: 32[0m
+[0;32mI (600) wifi_init: udp mbox: 6[0m
+[0;32mI (602) wifi_init: tcp mbox: 6[0m
+[0;32mI (605) wifi_init: tcp tx win: 5760[0m
+[0;32mI (608) wifi_init: tcp rx win: 5760[0m
+[0;32mI (612) wifi_init: tcp mss: 1440[0m
+[0;32mI (614) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (618) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (623) phy_init: phy_version 4863,a3a4459,Oct 28 2025,14:30:06[0m
+[0;32mI (702) wifi:mode : sta (14:2b:2f:c2:13:28)[0m
+[0;32mI (703) wifi:enable tsf[0m
+[0;32mI (706) NODE: Node MAC: 14:2B:2F:C2:13:28 on channel 6[0m
+[0;32mI (708) ESPNOW: espnow [version: 2.0] init[0m
+[0;32mI (708) NODE: ESP-NOW initialized[0m
+[0;32mI (710) NODE: All tasks running. Searching for gateway...[0m
+[0;32mI (715) main_task: Returned from app_main()[0m
+[0;32mI (720) NODE: Peer added: 1C:C3:AB:B3:F2:84 hops=65 gw=0[0m
+[0;32mI (724) NODE: Route: via 1C:C3:AB:B3:F2:84 (66 hops, rssi=-51)[0m
+[0;32mI (730) NODE: Peer added: 1C:C3:AB:B3:7F:08 hops=65 gw=0[0m
+[0;32mI (734) NODE: Route: via 1C:C3:AB:B3:7F:08 (66 hops, rssi=-42)[0m
+[0;32mI (740) NODE: Peer added: 28:05:A5:32:43:64 hops=65 gw=0[0m
+[0;32mI (745) NODE: Route: via 28:05:A5:32:43:64 (66 hops, rssi=-40)[0m
+[0;32mI (1102) NODE: Route: via 28:05:A5:32:43:64 (66 hops, rssi=-40)[0m
+[0;32mI (4484) NODE: Route: via 1C:C3:AB:B3:7F:08 (66 hops, rssi=-42)[0m
+[0;32mI (4489) NODE: Route: via 1C:C3:AB:B3:7F:08 (66 hops, rssi=-42)[0m
+[0;32mI (4642) NODE: Route: via 1C:C3:AB:B3:F2:84 (66 hops, rssi=-51)[0m
+[0;32mI (4647) NODE: Route: via 1C:C3:AB:B3:F2:84 (66 hops, rssi=-51)[0m
+[0;33mW (5730) NODE: DHT11 no response[0m
+[0;32mI (5842) NODE: AQ=408.7 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (5843) NODE: Sent seq=0 via 66 hops[0m
+[0;32mI (6102) NODE: Route: via 1C:C3:AB:B3:7F:08 (67 hops, rssi=-46)[0m
+[0;32mI (9485) NODE: Route: via 1C:C3:AB:B3:7F:08 (67 hops, rssi=-46)[0m
+[0;32mI (9642) NODE: Route: via 1C:C3:AB:B3:7F:08 (68 hops, rssi=-44)[0m
+[0;32mI (9661) NODE: Relaying data (hop 2)[0m
+[0;32mI (11103) NODE: Route: via 1C:C3:AB:B3:7F:08 (68 hops, rssi=-44)[0m
+[0;32mI (11104) NODE: Route: via 1C:C3:AB:B3:7F:08 (68 hops, rssi=-44)[0m
+[0;32mI (13416) NODE: Relaying data (hop 2)[0m
+[0;32mI (14484) NODE: Route: via 1C:C3:AB:B3:7F:08 (68 hops, rssi=-44)[0m
+[0;32mI (14646) NODE: Route: via 28:05:A5:32:43:64 (69 hops, rssi=-45)[0m
+[0;32mI (15716) NODE: Route: via 28:05:A5:32:43:64 (69 hops, rssi=-45)[0m
+[0;32mI (15717) NODE: Route: via 1C:C3:AB:B3:F2:84 (69 hops, rssi=-51)[0m
+[0;32mI (15718) NODE: Route: via 28:05:A5:32:43:64 (70 hops, rssi=-41)[0m
+[0;33mW (15863) NODE: DHT11 no response[0m
+[0;32mI (15973) NODE: AQ=947.4 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (15975) NODE: Sent seq=1 via 70 hops[0m
+[0;32mI (16105) NODE: Route: via 28:05:A5:32:43:64 (70 hops, rssi=-41)[0m
+[0;32mI (19488) NODE: Route: via 1C:C3:AB:B3:7F:08 (70 hops, rssi=-49)[0m
+[0;32mI (19488) NODE: Route: via 1C:C3:AB:B3:7F:08 (70 hops, rssi=-49)[0m
+[0;32mI (19642) NODE: Route: via 1C:C3:AB:B3:F2:84 (70 hops, rssi=-50)[0m
+[0;32mI (19796) NODE: Relaying data (hop 2)[0m
+[0;32mI (19799) NODE: Relaying data (hop 4)[0m
+[0;32mI (19805) NODE: Relaying data (hop 6)[0m
+[0;32mI (19810) NODE: Relaying data (hop 8)[0m
+[0;32mI (19814) NODE: Relaying data (hop 10)[0m
+[0;32mI (21103) NODE: Route: via 28:05:A5:32:43:64 (71 hops, rssi=-46)[0m
+[0;32mI (23554) NODE: Relaying data (hop 2)[0m
+[0;32mI (24484) NODE: Route: via 1C:C3:AB:B3:7F:08 (71 hops, rssi=-51)[0m
+[0;32mI (24642) NODE: Route: via 1C:C3:AB:B3:7F:08 (72 hops, rssi=-49)[0m
+[0;33mW (25995) NODE: DHT11 no response[0m
+[0;32mI (26103) NODE: Route: via 1C:C3:AB:B3:7F:08 (72 hops, rssi=-49)[0m
+[0;32mI (26104) NODE: Route: via 1C:C3:AB:B3:7F:08 (72 hops, rssi=-49)[0m
+[0;32mI (26108) NODE: AQ=1064.9 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (26110) NODE: Sent seq=2 via 72 hops[0m
+[0;32mI (29484) NODE: Route: via 1C:C3:AB:B3:7F:08 (72 hops, rssi=-49)[0m
+[0;32mI (29644) NODE: Route: via 28:05:A5:32:43:64 (73 hops, rssi=-43)[0m
+[0;32mI (29929) NODE: Relaying data (hop 3)[0m
+[0;32mI (29935) NODE: Relaying data (hop 5)[0m
+[0;32mI (29941) NODE: Relaying data (hop 7)[0m
+[0;32mI (29944) NODE: Relaying data (hop 9)[0m
+[0;33mW (29950) NODE: Dropping: max hops reached[0m
+[0;32mI (30715) NODE: Route: via 28:05:A5:32:43:64 (73 hops, rssi=-43)[0m
+[0;32mI (30716) NODE: Route: via 1C:C3:AB:B3:7F:08 (74 hops, rssi=-45)[0m
+[0;32mI (30717) NODE: Route: via 1C:C3:AB:B3:7F:08 (74 hops, rssi=-49)[0m
+[0;32mI (31105) NODE: Route: via 1C:C3:AB:B3:7F:08 (74 hops, rssi=-49)[0m
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6280
+load:0x40078000,len:15864
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v5.5.3-dirty 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Mar 12 2026 23:25:27[0m
+[0;32mI (28) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v3.1[0m
+[0;32mI (32) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (36) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (43) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (50) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (76) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=19194h (102804) map[0m
+[0;32mI (122) esp_image: segment 1: paddr=000291bc vaddr=3ffb0000 size=04358h ( 17240) load[0m
+[0;32mI (128) esp_image: segment 2: paddr=0002d51c vaddr=40080000 size=02afch ( 11004) load[0m
+[0;32mI (133) esp_image: segment 3: paddr=00030020 vaddr=400d0020 size=83170h (536944) map[0m
+[0;32mI (317) esp_image: segment 4: paddr=000b3198 vaddr=40082afc size=15494h ( 87188) load[0m
+[0;32mI (351) esp_image: segment 5: paddr=000c8634 vaddr=50000000 size=00020h (    32) load[0m
+[0;32mI (363) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (363) boot: Disabling RNG early entropy source...[0m
+[0;32mI (373) cpu_start: Multicore app[0m
+[0;32mI (382) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (382) cpu_start: Pro cpu start user code[0m
+[0;32mI (382) cpu_start: cpu freq: 240000000 Hz[0m
+[0;32mI (384) app_init: Application information:[0m
+[0;32mI (388) app_init: Project name:     node[0m
+[0;32mI (391) app_init: App version:      a754113-dirty[0m
+[0;32mI (396) app_init: Compile time:     Mar 12 2026 23:25:17[0m
+[0;32mI (401) app_init: ELF file SHA256:  af019e6ea...[0m
+[0;32mI (405) app_init: ESP-IDF:          v5.5.3-dirty[0m
+[0;32mI (409) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (413) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (417) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (421) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (428) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (433) heap_init: At 3FFB88D8 len 00027728 (157 KiB): DRAM[0m
+[0;32mI (438) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (443) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (449) heap_init: At 40097F90 len 00008070 (32 KiB): IRAM[0m
+[0;32mI (455) spi_flash: detected chip: generic[0m
+[0;32mI (458) spi_flash: flash io: dio[0m
+[0;33mW (461) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (474) main_task: Started on CPU0[0m
+[0;32mI (477) main_task: Calling app_main()[0m
+[0;32mI (479) NODE: ╔══════════════════════════════════════╗[0m
+[0;32mI (491) NODE: ║  Pollution Monitoring Node           ║[0m
+[0;32mI (496) NODE: ║  ESP-IDF v5.5.3-dirty                    ║[0m
+[0;32mI (502) NODE: ╚══════════════════════════════════════╝[0m
+[0;32mI (539) NODE: ADC init done, calibrated=1[0m
+[0;32mI (543) wifi:wifi driver task: 3ffc0728, prio:23, stack:6656, core=0[0m
+[0;32mI (557) wifi:wifi firmware version: 4df78f2[0m
+[0;32mI (557) wifi:wifi certification version: v7.0[0m
+[0;32mI (557) wifi:config NVS flash: enabled[0m
+[0;32mI (557) wifi:config nano formatting: disabled[0m
+[0;32mI (562) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (566) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (570) wifi:Init management short buffer num: 32[0m
+[0;32mI (575) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (579) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (583) wifi:Init static rx buffer num: 10[0m
+[0;32mI (587) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (592) wifi_init: rx ba win: 6[0m
+[0;32mI (593) wifi_init: accept mbox: 6[0m
+[0;32mI (596) wifi_init: tcpip mbox: 32[0m
+[0;32mI (600) wifi_init: udp mbox: 6[0m
+[0;32mI (602) wifi_init: tcp mbox: 6[0m
+[0;32mI (605) wifi_init: tcp tx win: 5760[0m
+[0;32mI (608) wifi_init: tcp rx win: 5760[0m
+[0;32mI (612) wifi_init: tcp mss: 1440[0m
+[0;32mI (614) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (618) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (623) phy_init: phy_version 4863,a3a4459,Oct 28 2025,14:30:06[0m
+[0;32mI (702) wifi:mode : sta (14:2b:2f:c2:13:28)[0m
+[0;32mI (703) wifi:enable tsf[0m
+[0;32mI (706) NODE: Node MAC: 14:2B:2F:C2:13:28 on channel 6[0m
+[0;32mI (707) ESPNOW: espnow [version: 2.0] init[0m
+[0;32mI (708) NODE: ESP-NOW initialized[0m
+[0;32mI (709) NODE: All tasks running. Searching for gateway...[0m
+[0;32mI (714) main_task: Returned from app_main()[0m
+[0;32mI (718) NODE: Peer added: 1C:C3:AB:B3:7F:08 hops=74 gw=0[0m
+[0;32mI (723) NODE: Route: via 1C:C3:AB:B3:7F:08 (75 hops, rssi=-50)[0m
+[0;32mI (729) NODE: Peer added: 1C:C3:AB:B3:F2:84 hops=74 gw=0[0m
+[0;32mI (734) NODE: Route: via 1C:C3:AB:B3:7F:08 (75 hops, rssi=-50)[0m
+[0;32mI (740) NODE: Peer added: 28:05:A5:32:43:64 hops=75 gw=0[0m
+[0;32mI (745) NODE: Route: via 1C:C3:AB:B3:7F:08 (75 hops, rssi=-50)[0m
+[0;32mI (750) NODE: Route: via 1C:C3:AB:B3:7F:08 (75 hops, rssi=-49)[0m
+[0;32mI (756) NODE: Route: via 1C:C3:AB:B3:7F:08 (75 hops, rssi=-50)[0m
+*�P�TU�����Ғ����j
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6280
+load:0x40078000,len:15864
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v5.5.3-dirty 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Mar 12 2026 23:25:27[0m
+[0;32mI (28) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v3.1[0m
+[0;32mI (32) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (36) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (43) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (50) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (76) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=19194h (102804) map[0m
+[0;32mI (122) esp_image: segment 1: paddr=000291bc vaddr=3ffb0000 size=04358h ( 17240) load[0m
+[0;32mI (128) esp_image: segment 2: paddr=0002d51c vaddr=40080000 size=02afch ( 11004) load[0m
+[0;32mI (133) esp_image: segment 3: paddr=00030020 vaddr=400d0020 size=83170h (536944) map[0m
+[0;32mI (317) esp_image: segment 4: paddr=000b3198 vaddr=40082afc size=15494h ( 87188) load[0m
+[0;32mI (351) esp_image: segment 5: paddr=000c8634 vaddr=50000000 size=00020h (    32) load[0m
+[0;32mI (363) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (363) boot: Disabling RNG early entropy source...[0m
+[0;32mI (373) cpu_start: Multicore app[0m
+[0;32mI (382) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (382) cpu_start: Pro cpu start user code[0m
+[0;32mI (382) cpu_start: cpu freq: 240000000 Hz[0m
+[0;32mI (384) app_init: Application information:[0m
+[0;32mI (388) app_init: Project name:     node[0m
+[0;32mI (391) app_init: App version:      a754113-dirty[0m
+[0;32mI (396) app_init: Compile time:     Mar 12 2026 23:25:17[0m
+[0;32mI (401) app_init: ELF file SHA256:  af019e6ea...[0m
+[0;32mI (405) app_init: ESP-IDF:          v5.5.3-dirty[0m
+[0;32mI (409) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (413) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (417) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (421) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (428) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (432) heap_init: At 3FFB88D8 len 00027728 (157 KiB): DRAM[0m
+[0;32mI (438) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (443) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (449) heap_init: At 40097F90 len 00008070 (32 KiB): IRAM[0m
+[0;32mI (455) spi_flash: detected chip: generic[0m
+[0;32mI (458) spi_flash: flash io: dio[0m
+[0;33mW (461) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (474) main_task: Started on CPU0[0m
+[0;32mI (477) main_task: Calling app_main()[0m
+[0;32mI (479) NODE: ╔══════════════════════════════════════╗[0m
+[0;32mI (491) NODE: ║  Pollution Monitoring Node           ║[0m
+[0;32mI (496) NODE: ║  ESP-IDF v5.5.3-dirty                    ║[0m
+[0;32mI (502) NODE: ╚══════════════════════════════════════╝[0m
+[0;32mI (539) NODE: ADC init done, calibrated=1[0m
+[0;32mI (543) wifi:wifi driver task: 3ffc0728, prio:23, stack:6656, core=0[0m
+[0;32mI (557) wifi:wifi firmware version: 4df78f2[0m
+[0;32mI (557) wifi:wifi certification version: v7.0[0m
+[0;32mI (557) wifi:config NVS flash: enabled[0m
+[0;32mI (557) wifi:config nano formatting: disabled[0m
+[0;32mI (562) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (566) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (570) wifi:Init management short buffer num: 32[0m
+[0;32mI (575) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (579) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (583) wifi:Init static rx buffer num: 10[0m
+[0;32mI (587) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (592) wifi_init: rx ba win: 6[0m
+[0;32mI (593) wifi_init: accept mbox: 6[0m
+[0;32mI (596) wifi_init: tcpip mbox: 32[0m
+[0;32mI (600) wifi_init: udp mbox: 6[0m
+[0;32mI (602) wifi_init: tcp mbox: 6[0m
+[0;32mI (605) wifi_init: tcp tx win: 5760[0m
+[0;32mI (608) wifi_init: tcp rx win: 5760[0m
+[0;32mI (612) wifi_init: tcp mss: 1440[0m
+[0;32mI (614) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (618) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (623) phy_init: phy_version 4863,a3a4459,Oct 28 2025,14:30:06[0m
+[0;32mI (701) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)[0m
+[0;32mI (715) wifi:mode : sta (14:2b:2f:c2:13:28)[0m
+[0;32mI (716) wifi:enable tsf[0m
+[0;32mI (719) NODE: Node MAC: 14:2B:2F:C2:13:28 on channel 6[0m
+[0;32mI (720) ESPNOW: espnow [version: 2.0] init[0m
+[0;32mI (721) NODE: ESP-NOW initialized[0m
+[0;32mI (722) NODE: All tasks running. Searching for gateway...[0m
+[0;32mI (727) NODE: Peer added: 1C:C3:AB:B3:7F:08 hops=76 gw=0[0m
+[0;32mI (732) NODE: Route: via 1C:C3:AB:B3:7F:08 (77 hops, rssi=-50)[0m
+[0;32mI (738) NODE: Peer added: 1C:C3:AB:B3:F2:84 hops=75 gw=0[0m
+[0;32mI (743) NODE: Route: via 1C:C3:AB:B3:F2:84 (76 hops, rssi=-49)[0m
+[0;32mI (749) NODE: Peer added: 28:05:A5:32:43:64 hops=75 gw=0[0m
+[0;32mI (754) NODE: Route: via 1C:C3:AB:B3:F2:84 (76 hops, rssi=-49)[0m
+[0;32mI (759) main_task: Returned from app_main()[0m
+[0;32mI (2319) NODE: Route: via 1C:C3:AB:B3:F2:84 (76 hops, rssi=-49)[0m
+[0;32mI (2478) NODE: Route: via 1C:C3:AB:B3:F2:84 (76 hops, rssi=-49)[0m
+[0;32mI (3939) NODE: Route: via 28:05:A5:32:43:64 (76 hops, rssi=-53)[0m
+[0;32mI (3939) NODE: Route: via 28:05:A5:32:43:64 (76 hops, rssi=-53)[0m
+[0;33mW (5742) NODE: DHT11 no response[0m
+[0;32mI (5854) NODE: AQ=1748.2 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (5855) NODE: Sent seq=0 via 76 hops[0m
+[0;32mI (6661) NODE: Relaying data (hop 2)[0m
+[0;32mI (7320) NODE: Route: via 1C:C3:AB:B3:F2:84 (77 hops, rssi=-49)[0m
+[0;32mI (7478) NODE: Route: via 1C:C3:AB:B3:F2:84 (77 hops, rssi=-49)[0m
+[0;32mI (8939) NODE: Route: via 1C:C3:AB:B3:F2:84 (78 hops, rssi=-50)[0m
+[0;32mI (12324) NODE: Route: via 1C:C3:AB:B3:F2:84 (78 hops, rssi=-50)[0m
+[0;32mI (12329) NODE: Route: via 1C:C3:AB:B3:F2:84 (78 hops, rssi=-50)[0m
+[0;32mI (12481) NODE: Route: via 1C:C3:AB:B3:F2:84 (78 hops, rssi=-50)[0m
+[0;32mI (13025) NODE: Relaying data (hop 3)[0m
+[0;32mI (13029) NODE: Relaying data (hop 5)[0m
+[0;32mI (13035) NODE: Relaying data (hop 7)[0m
+[0;32mI (13043) NODE: Relaying data (hop 9)[0m
+[0;33mW (13051) NODE: Dropping: max hops reached[0m
+[0;32mI (13941) NODE: Route: via 28:05:A5:32:43:64 (79 hops, rssi=-55)[0m
+[0;32mI (15727) NODE: Route: via 28:05:A5:32:43:64 (79 hops, rssi=-55)[0m
+[0;32mI (15728) NODE: Route: via 28:05:A5:32:43:64 (79 hops, rssi=-55)[0m
+[0;32mI (15729) NODE: Route: via 1C:C3:AB:B3:F2:84 (80 hops, rssi=-49)[0m
+[0;33mW (15875) NODE: DHT11 no response[0m
+[0;32mI (15985) NODE: AQ=1059.7 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (15987) NODE: Sent seq=1 via 80 hops[0m
+[0;32mI (17323) NODE: Route: via 28:05:A5:32:43:64 (80 hops, rssi=-45)[0m
+[0;32mI (17478) NODE: Route: via 28:05:A5:32:43:64 (80 hops, rssi=-45)[0m
+[0;32mI (18943) NODE: Route: via 28:05:A5:32:43:64 (80 hops, rssi=-45)[0m
+[0;32mI (18944) NODE: Route: via 28:05:A5:32:43:64 (80 hops, rssi=-45)[0m
+[0;32mI (22324) NODE: Route: via 1C:C3:AB:B3:7F:08 (81 hops, rssi=-49)[0m
+[0;32mI (22481) NODE: Route: via 1C:C3:AB:B3:F2:84 (81 hops, rssi=-53)[0

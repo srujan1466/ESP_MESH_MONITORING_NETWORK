@@ -39,12 +39,12 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/srujan/Desktop/IP3/gateway/build/esp-idf/esp_system/port/soc/esp32/cmake_install.cmake")
+  include("/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/gateway/build/esp-idf/esp_system/port/soc/esp32/cmake_install.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/home/srujan/Desktop/IP3/gateway/build/esp-idf/esp_system/port/install_local_manifest.txt"
+  file(WRITE "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/gateway/build/esp-idf/esp_system/port/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -1,8 +1,0 @@
-Command: ninja all
-[0/1] Re-running CMake...
--- Minimal build - OFF
--- Building ESP-IDF components for target esp32
--- ESP-TEE is currently supported only on the esp32c6;esp32h2;esp32c5 SoCs
--- Configuring incomplete, errors occurred!
-FAILED: build.ninja 
-/usr/bin/cmake --regenerate-during-build -S/home/srujan/Desktop/IP3/node -B/home/srujan/Desktop/IP3/node/build

@@ -43,12 +43,12 @@
 /* ─── WiFi Configuration ────────────────────────────────────────────────── */
 #define WIFI_SSID               "Srujuuu😜"
 #define WIFI_PASS               "14062006"
-#define SERVER_URL               "http://10.245.58.210:5000/api/data"
-#define SERVER_NODE_STATUS_URL   "http://10.245.58.210:5000/api/node_status"
+#define SERVER_URL               "http://10.245.58.56:5000/api/data"
+#define SERVER_NODE_STATUS_URL   "http://10.245.58.56:5000/api/node_status"
 #define MAX_RETRY_CONNECT       10
 
 /* ─── ESP-NOW Configuration ─────────────────────────────────────────────── */
-#define ESPNOW_CHANNEL          1
+#define ESPNOW_CHANNEL          0
 #define ESPNOW_PMK              "pmk1234567890ab"
 static const uint8_t BROADCAST_MAC[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 

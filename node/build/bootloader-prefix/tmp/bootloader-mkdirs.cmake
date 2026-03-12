@@ -10,18 +10,18 @@ if(NOT EXISTS "/home/srujan/.espressif/v5.5.3/esp-idf/components/bootloader/subp
   file(MAKE_DIRECTORY "/home/srujan/.espressif/v5.5.3/esp-idf/components/bootloader/subproject")
 endif()
 file(MAKE_DIRECTORY
-  "/home/srujan/Desktop/IP3/node/build/bootloader"
-  "/home/srujan/Desktop/IP3/node/build/bootloader-prefix"
-  "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/tmp"
-  "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp"
-  "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src"
-  "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp"
+  "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader"
+  "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix"
+  "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/tmp"
+  "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp"
+  "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src"
+  "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp"
 )
 
 set(configSubDirs )
 foreach(subDir IN LISTS configSubDirs)
-    file(MAKE_DIRECTORY "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/${subDir}")
+    file(MAKE_DIRECTORY "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/${subDir}")
 endforeach()
 if(cfgdir)
-  file(MAKE_DIRECTORY "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp${cfgdir}") # cfgdir has leading slash
+  file(MAKE_DIRECTORY "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp${cfgdir}") # cfgdir has leading slash
 endif()

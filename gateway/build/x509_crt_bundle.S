@@ -1,4 +1,4 @@
-/* * Data converted from /home/srujan/Desktop/IP3/gateway/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/gateway/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 #if !defined (__APPLE__) && !defined (__linux__)

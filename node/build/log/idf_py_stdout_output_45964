@@ -1,0 +1,248 @@
+Command: /home/srujan/.espressif/python_env/idf5.5_py3.13_env/bin/python /home/srujan/.espressif/v5.5.3/esp-idf/tools/idf_monitor.py -p /dev/ttyUSB1 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/node.elf /home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader/bootloader.elf -m '/home/srujan/.espressif/python_env/idf5.5_py3.13_env/bin/python' '/home/srujan/.espressif/v5.5.3/esp-idf/tools/idf.py'
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6280
+load:0x40078000,len:15864
+load:0x40080400,len:3920
+entry 0x40080644
+[0;32mI (27) boot: ESP-IDF v5.5.3-dirty 2nd stage bootloader[0m
+[0;32mI (27) boot: compile time Mar 12 2026 23:25:27[0m
+[0;32mI (28) boot: Multicore bootloader[0m
+[0;32mI (29) boot: chip revision: v3.1[0m
+[0;32mI (32) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (36) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (39) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (43) boot: Enabling RNG early entropy source...[0m
+[0;32mI (47) boot: Partition Table:[0m
+[0;32mI (50) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000[0m
+[0;32mI (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000[0m
+[0;32mI (69) boot:  2 factory          factory app      00 00 00010000 00100000[0m
+[0;32mI (76) boot: End of partition table[0m
+[0;32mI (79) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=19194h (102804) map[0m
+[0;32mI (122) esp_image: segment 1: paddr=000291bc vaddr=3ffb0000 size=04358h ( 17240) load[0m
+[0;32mI (128) esp_image: segment 2: paddr=0002d51c vaddr=40080000 size=02afch ( 11004) load[0m
+[0;32mI (133) esp_image: segment 3: paddr=00030020 vaddr=400d0020 size=83170h (536944) map[0m
+[0;32mI (317) esp_image: segment 4: paddr=000b3198 vaddr=40082afc size=15494h ( 87188) load[0m
+[0;32mI (351) esp_image: segment 5: paddr=000c8634 vaddr=50000000 size=00020h (    32) load[0m
+[0;32mI (363) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (363) boot: Disabling RNG early entropy source...[0m
+[0;32mI (373) cpu_start: Multicore app[0m
+[0;32mI (382) cpu_start: GPIO 3 and 1 are used as console UART I/O pins[0m
+[0;32mI (382) cpu_start: Pro cpu start user code[0m
+[0;32mI (382) cpu_start: cpu freq: 240000000 Hz[0m
+[0;32mI (384) app_init: Application information:[0m
+[0;32mI (388) app_init: Project name:     node[0m
+[0;32mI (391) app_init: App version:      a754113-dirty[0m
+[0;32mI (396) app_init: Compile time:     Mar 12 2026 23:25:17[0m
+[0;32mI (401) app_init: ELF file SHA256:  af019e6ea...[0m
+[0;32mI (405) app_init: ESP-IDF:          v5.5.3-dirty[0m
+[0;32mI (409) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (413) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (417) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (421) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (428) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (433) heap_init: At 3FFB88D8 len 00027728 (157 KiB): DRAM[0m
+[0;32mI (438) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (443) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (449) heap_init: At 40097F90 len 00008070 (32 KiB): IRAM[0m
+[0;32mI (455) spi_flash: detected chip: generic[0m
+[0;32mI (458) spi_flash: flash io: dio[0m
+[0;33mW (461) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (474) main_task: Started on CPU0[0m
+[0;32mI (477) main_task: Calling app_main()[0m
+[0;32mI (479) NODE: ╔══════════════════════════════════════╗[0m
+[0;32mI (491) NODE: ║  Pollution Monitoring Node           ║[0m
+[0;32mI (496) NODE: ║  ESP-IDF v5.5.3-dirty                    ║[0m
+[0;32mI (502) NODE: ╚══════════════════════════════════════╝[0m
+[0;32mI (539) NODE: ADC init done, calibrated=1[0m
+[0;32mI (543) wifi:wifi driver task: 3ffc0728, prio:23, stack:6656, core=0[0m
+[0;32mI (557) wifi:wifi firmware version: 4df78f2[0m
+[0;32mI (557) wifi:wifi certification version: v7.0[0m
+[0;32mI (557) wifi:config NVS flash: enabled[0m
+[0;32mI (557) wifi:config nano formatting: disabled[0m
+[0;32mI (562) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (566) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (570) wifi:Init management short buffer num: 32[0m
+[0;32mI (575) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (579) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (583) wifi:Init static rx buffer num: 10[0m
+[0;32mI (587) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (592) wifi_init: rx ba win: 6[0m
+[0;32mI (593) wifi_init: accept mbox: 6[0m
+[0;32mI (596) wifi_init: tcpip mbox: 32[0m
+[0;32mI (599) wifi_init: udp mbox: 6[0m
+[0;32mI (602) wifi_init: tcp mbox: 6[0m
+[0;32mI (605) wifi_init: tcp tx win: 5760[0m
+[0;32mI (608) wifi_init: tcp rx win: 5760[0m
+[0;32mI (611) wifi_init: tcp mss: 1440[0m
+[0;32mI (614) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (618) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (623) phy_init: phy_version 4863,a3a4459,Oct 28 2025,14:30:06[0m
+[0;32mI (701) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)[0m
+[0;32mI (716) wifi:mode : sta (14:2b:2f:c2:13:28)[0m
+[0;32mI (717) wifi:enable tsf[0m
+[0;32mI (720) NODE: Node MAC: 14:2B:2F:C2:13:28 on channel 6[0m
+[0;32mI (721) ESPNOW: espnow [version: 2.0] init[0m
+[0;32mI (722) NODE: ESP-NOW initialized[0m
+[0;32mI (723) NODE: All tasks running. Searching for gateway...[0m
+[0;32mI (728) main_task: Returned from app_main()[0m
+[0;32mI (731) NODE: Peer added: 1C:C3:AB:B3:7F:08 hops=2 gw=0[0m
+[0;32mI (737) NODE: Route: via 1C:C3:AB:B3:7F:08 (3 hops, rssi=-43)[0m
+[0;32mI (743) NODE: Peer added: 28:05:A5:32:43:64 hops=2 gw=0[0m
+[0;32mI (747) NODE: Route: via 1C:C3:AB:B3:7F:08 (3 hops, rssi=-43)[0m
+[0;32mI (3460) NODE: Route: via 1C:C3:AB:B3:7F:08 (3 hops, rssi=-44)[0m
+[0;32mI (5385) NODE: Route: via 1C:C3:AB:B3:7F:08 (3 hops, rssi=-44)[0m
+[0;32mI (5386) NODE: Route: via 1C:C3:AB:B3:7F:08 (3 hops, rssi=-44)[0m
+[0;33mW (5743) NODE: DHT11 no response[0m
+[0;32mI (5855) NODE: AQ=999.9 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (5856) NODE: Sent seq=0 via 3 hops[0m
+[0;32mI (6044) NODE: Relaying data (hop 2)[0m
+[0;32mI (6053) NODE: Relaying data (hop 4)[0m
+[0;32mI (6060) NODE: Relaying data (hop 6)[0m
+[0;32mI (6067) NODE: Relaying data (hop 8)[0m
+[0;32mI (6074) NODE: Relaying data (hop 10)[0m
+[0;32mI (8459) NODE: Route: via 28:05:A5:32:43:64 (4 hops, rssi=-49)[0m
+[0;32mI (10174) NODE: Relaying data (hop 2)[0m
+[0;32mI (10179) NODE: Relaying data (hop 4)[0m
+[0;32mI (10183) NODE: Relaying data (hop 6)[0m
+[0;32mI (10191) NODE: Relaying data (hop 8)[0m
+[0;32mI (10197) NODE: Relaying data (hop 10)[0m
+[0;32mI (10383) NODE: Route: via 1C:C3:AB:B3:7F:08 (5 hops, rssi=-39)[0m
+[0;32mI (13459) NODE: Route: via 28:05:A5:32:43:64 (5 hops, rssi=-50)[0m
+[0;32mI (15383) NODE: Route: via 1C:C3:AB:B3:7F:08 (6 hops, rssi=-43)[0m
+[0;32mI (15728) NODE: Route: via 28:05:A5:32:43:64 (7 hops, rssi=-54)[0m
+[0;32mI (15729) NODE: Route: via 28:05:A5:32:43:64 (7 hops, rssi=-54)[0m
+[0;33mW (15876) NODE: DHT11 no response[0m
+[0;32mI (15986) NODE: AQ=411.1 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (15988) NODE: Sent seq=1 via 7 hops[0m
+[0;32mI (16180) NODE: Relaying data (hop 3)[0m
+[0;32mI (18460) NODE: Route: via 28:05:A5:32:43:64 (7 hops, rssi=-54)[0m
+[0;32mI (18461) NODE: Route: via 28:05:A5:32:43:64 (7 hops, rssi=-54)[0m
+[0;32mI (20308) NODE: Relaying data (hop 2)[0m
+[0;32mI (20312) NODE: Relaying data (hop 4)[0m
+[0;32mI (20318) NODE: Relaying data (hop 6)[0m
+[0;32mI (20323) NODE: Relaying data (hop 8)[0m
+[0;32mI (20329) NODE: Relaying data (hop 10)[0m
+[0;32mI (20384) NODE: Route: via 1C:C3:AB:B3:7F:08 (8 hops, rssi=-42)[0m
+[0;32mI (23461) NODE: Route: via 28:05:A5:32:43:64 (8 hops, rssi=-50)[0m
+[0;32mI (25384) NODE: Route: via 1C:C3:AB:B3:7F:08 (9 hops, rssi=-47)[0m
+[0;33mW (26008) NODE: DHT11 no response[0m
+[0;32mI (26118) NODE: AQ=401.4 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (26120) NODE: Sent seq=2 via 9 hops[0m
+[0;32mI (26312) NODE: Relaying data (hop 3)[0m
+[0;32mI (26321) NODE: Relaying data (hop 5)[0m
+[0;32mI (26329) NODE: Relaying data (hop 7)[0m
+[0;32mI (26336) NODE: Relaying data (hop 9)[0m
+[0;33mW (26340) NODE: Dropping: max hops reached[0m
+[0;32mI (28458) NODE: Route: via 28:05:A5:32:43:64 (10 hops, rssi=-76)[0m
+[0;32mI (30384) NODE: Route: via 1C:C3:AB:B3:7F:08 (11 hops, rssi=-44)[0m
+[0;32mI (30439) NODE: Relaying data (hop 2)[0m
+[0;32mI (30728) NODE: Route: via 28:05:A5:32:43:64 (11 hops, rssi=-55)[0m
+[0;32mI (30729) NODE: Route: via 1C:C3:AB:B3:7F:08 (12 hops, rssi=-45)[0m
+[0;32mI (33458) NODE: Route: via 28:05:A5:32:43:64 (12 hops, rssi=-47)[0m
+[0;33mW (36140) NODE: DHT11 no response[0m
+[0;32mI (36250) NODE: AQ=713.0 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (36252) NODE: Sent seq=3 via 12 hops[0m
+[0;32mI (38461) NODE: Route: via 28:05:A5:32:43:64 (12 hops, rssi=-47)[0m
+[0;32mI (43459) NODE: Route: via 1C:C3:AB:B3:7F:08 (12 hops, rssi=-46)[0m
+[0;32mI (45732) NODE: Route: via 28:05:A5:32:43:64 (12 hops, rssi=-47)[0m
+[0;33mW (46272) NODE: DHT11 no response[0m
+[0;32mI (46382) NODE: AQ=467.5 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (46384) NODE: Sent seq=4 via 12 hops[0m
+[0;32mI (48303) NODE: Route: via 1C:C3:AB:B3:7F:08 (12 hops, rssi=-51)[0m
+[0;32mI (48303) NODE: Route: via 1C:C3:AB:B3:7F:08 (12 hops, rssi=-51)[0m
+[0;32mI (48464) NODE: Route: via 1C:C3:AB:B3:7F:08 (14 hops, rssi=-47)[0m
+[0;32mI (48464) NODE: Route: via 1C:C3:AB:B3:7F:08 (14 hops, rssi=-47)[0m
+[0;32mI (50709) NODE: Relaying data (hop 3)[0m
+[0;32mI (53302) NODE: Route: via 1C:C3:AB:B3:7F:08 (14 hops, rssi=-47)[0m
+[0;32mI (53459) NODE: Route: via 28:05:A5:32:43:64 (15 hops, rssi=-46)[0m
+[0;33mW (56404) NODE: DHT11 no response[0m
+[0;32mI (56514) NODE: AQ=227.3 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (56516) NODE: Sent seq=5 via 15 hops[0m
+[0;32mI (58303) NODE: Route: via 1C:C3:AB:B3:7F:08 (16 hops, rssi=-42)[0m
+[0;32mI (58459) NODE: Route: via 1C:C3:AB:B3:7F:08 (17 hops, rssi=-39)[0m
+[0;32mI (60730) NODE: Route: via 1C:C3:AB:B3:7F:08 (17 hops, rssi=-39)[0m
+[0;32mI (60731) NODE: Route: via 1C:C3:AB:B3:7F:08 (18 hops, rssi=-43)[0m
+[0;32mI (63301) NODE: Route: via 1C:C3:AB:B3:7F:08 (18 hops, rssi=-43)[0m
+[0;32mI (63302) NODE: Route: via 1C:C3:AB:B3:7F:08 (18 hops, rssi=-43)[0m
+[0;32mI (63459) NODE: Route: via 28:05:A5:32:43:64 (18 hops, rssi=-46)[0m
+[0;33mW (66536) NODE: DHT11 no response[0m
+[0;32mI (66646) NODE: AQ=827.8 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (66648) NODE: Sent seq=6 via 18 hops[0m
+[0;32mI (68302) NODE: Route: via 1C:C3:AB:B3:7F:08 (19 hops, rssi=-44)[0m
+[0;32mI (68459) NODE: Route: via 1C:C3:AB:B3:7F:08 (20 hops, rssi=-46)[0m
+[0;32mI (73301) NODE: Route: via 1C:C3:AB:B3:7F:08 (20 hops, rssi=-46)[0m
+[0;32mI (73459) NODE: Route: via 28:05:A5:32:43:64 (21 hops, rssi=-46)[0m
+[0;32mI (73697) NODE: Relaying data (hop 2)[0m
+[0;32mI (75728) NODE: Route: via 1C:C3:AB:B3:7F:08 (22 hops, rssi=-39)[0m
+[0;32mI (75730) NODE: Route: via 1C:C3:AB:B3:7F:08 (22 hops, rssi=-43)[0m
+[0;33mW (76668) NODE: DHT11 no response[0m
+[0;32mI (76778) NODE: AQ=158.6 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (76780) NODE: Sent seq=7 via 22 hops[0m
+[0;32mI (78302) NODE: Route: via 1C:C3:AB:B3:7F:08 (22 hops, rssi=-43)[0m
+[0;32mI (78302) NODE: Route: via 1C:C3:AB:B3:7F:08 (22 hops, rssi=-43)[0m
+[0;32mI (78460) NODE: Route: via 1C:C3:AB:B3:7F:08 (23 hops, rssi=-38)[0m
+[0;32mI (78460) NODE: Route: via 1C:C3:AB:B3:7F:08 (23 hops, rssi=-39)[0m
+[0;32mI (83302) NODE: Route: via 1C:C3:AB:B3:7F:08 (23 hops, rssi=-39)[0m
+[0;32mI (83460) NODE: Route: via 28:05:A5:32:43:64 (24 hops, rssi=-46)[0m
+[0;32mI (83833) NODE: Relaying data (hop 2)[0m
+[0;33mW (86800) NODE: DHT11 no response[0m
+[0;32mI (86910) NODE: AQ=662.2 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (86912) NODE: Sent seq=8 via 24 hops[0m
+[0;32mI (88302) NODE: Route: via 1C:C3:AB:B3:7F:08 (25 hops, rssi=-40)[0m
+[0;32mI (88460) NODE: Route: via 1C:C3:AB:B3:7F:08 (26 hops, rssi=-38)[0m
+[0;32mI (90730) NODE: Route: via 28:05:A5:32:43:64 (26 hops, rssi=-47)[0m
+[0;32mI (90733) NODE: Route: via 1C:C3:AB:B3:7F:08 (27 hops, rssi=-41)[0m
+[0;32mI (93302) NODE: Route: via 1C:C3:AB:B3:7F:08 (27 hops, rssi=-41)[0m
+[0;32mI (93303) NODE: Route: via 1C:C3:AB:B3:7F:08 (27 hops, rssi=-41)[0m
+[0;32mI (93460) NODE: Route: via 28:05:A5:32:43:64 (27 hops, rssi=-47)[0m
+[0;33mW (96932) NODE: DHT11 no response[0m
+[0;32mI (97042) NODE: AQ=117.6 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (97044) NODE: Sent seq=9 via 27 hops[0m
+[0;32mI (98302) NODE: Route: via 1C:C3:AB:B3:7F:08 (28 hops, rssi=-44)[0m
+[0;32mI (98461) NODE: Route: via 1C:C3:AB:B3:7F:08 (29 hops, rssi=-43)[0m
+[0;32mI (99923) NODE: Peer added: 1C:C3:AB:B3:F2:84 hops=255 gw=0[0m
+[0;32mI (99923) NODE: Route: via 1C:C3:AB:B3:7F:08 (29 hops, rssi=-43)[0m
+[0;32mI (99926) NODE: Route: via 1C:C3:AB:B3:7F:08 (29 hops, rssi=-43)[0m
+[0;32mI (103302) NODE: Route: via 1C:C3:AB:B3:7F:08 (29 hops, rssi=-43)[0m
+[0;32mI (103460) NODE: Route: via 28:05:A5:32:43:64 (30 hops, rssi=-48)[0m
+[0;32mI (104096) NODE: Relaying data (hop 2)[0m
+[0;32mI (104924) NODE: Route: via 28:05:A5:32:43:64 (30 hops, rssi=-48)[0m
+[0;32mI (105060) NODE: Relaying data (hop 2)[0m
+[0;32mI (105064) NODE: Relaying data (hop 4)[0m
+[0;32mI (105075) NODE: Relaying data (hop 6)[0m
+[0;32mI (105083) NODE: Relaying data (hop 8)[0m
+[0;32mI (105089) NODE: Relaying data (hop 10)[0m
+[0;32mI (105728) NODE: Route: via 1C:C3:AB:B3:7F:08 (31 hops, rssi=-39)[0m
+[0;32mI (105729) NODE: Route: via 1C:C3:AB:B3:7F:08 (31 hops, rssi=-44)[0m
+[0;32mI (105730) NODE: Route: via 1C:C3:AB:B3:7F:08 (31 hops, rssi=-44)[0m
+[0;33mW (107064) NODE: DHT11 no response[0m
+[0;32mI (107174) NODE: AQ=108.3 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (107176) NODE: Sent seq=10 via 31 hops[0m
+[0;32mI (108308) NODE: Route: via 1C:C3:AB:B3:7F:08 (31 hops, rssi=-44)[0m
+[0;32mI (108308) NODE: Route: via 1C:C3:AB:B3:7F:08 (31 hops, rssi=-44)[0m
+[0;32mI (108461) NODE: Route: via 1C:C3:AB:B3:F2:84 (31 hops, rssi=-47)[0m
+[0;32mI (108463) NODE: Route: via 1C:C3:AB:B3:F2:84 (31 hops, rssi=-47)[0m
+[0;32mI (109927) NODE: Route: via 1C:C3:AB:B3:7F:08 (32 hops, rssi=-46)[0m
+[0;32mI (113303) NODE: Route: via 1C:C3:AB:B3:7F:08 (32 hops, rssi=-46)[0m
+[0;32mI (113463) NODE: Route: via 1C:C3:AB:B3:F2:84 (32 hops, rssi=-46)[0m
+[0;32mI (114234) NODE: Relaying data (hop 3)[0m
+[0;32mI (114245) NODE: Relaying data (hop 5)[0m
+[0;32mI (114253) NODE: Relaying data (hop 7)[0m
+[0;32mI (114258) NODE: Relaying data (hop 9)[0m
+[0;33mW (114266) NODE: Dropping: max hops reached[0m
+[0;32mI (114922) NODE: Route: via 1C:C3:AB:B3:7F:08 (33 hops, rssi=-49)[0m
+[0;32mI (114923) NODE: Route: via 1C:C3:AB:B3:7F:08 (33 hops, rssi=-49)[0m
+[0;32mI (115196) NODE: Relaying data (hop 2)[0m
+[0;33mW (117196) NODE: DHT11 no response[0m
+[0;32mI (117306) NODE: AQ=338.5 ppm  T=-999.0°C  H=-999.0%  N=54.4 dB[0m
+[0;32mI (117308) NODE: Sent seq=11 via 33 hops[0m
+[0;32mI (118303) NODE: Route: via 1C:C3:AB:B3:7F:08 (33 hops, rssi=-49)[0m
+[0;32mI (118461) NODE: Route: via 1C:C3:AB:B3:F2:84 (34 hops, rssi=-43)[0m
+[0;32mI (119923) NODE: Route: via 28:05:A5:32:43:64 (34 hops, rssi=-56)[0m
+[0;32mI (120730) NO

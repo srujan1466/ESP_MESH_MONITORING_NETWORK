@@ -65,7 +65,8 @@
 #define MAX_HOPS                10
 
 /* --- ESP-NOW --- */
-#define ESPNOW_CHANNEL          1
+//#define current_channel          6
+static uint8_t current_channel = 1;
 #define ESPNOW_PMK              "pmk1234567890ab"
 
 /* --- Broadcast MAC --- */
@@ -235,9 +236,15 @@ static int add_or_update_peer(const uint8_t *mac, int8_t rssi,
             if (!esp_now_is_peer_exist(mac)) {
                 esp_now_peer_info_t pcfg = {0};
                 memcpy(pcfg.peer_addr, mac, 6);
-                pcfg.channel = ESPNOW_CHANNEL;
+                pcfg.channel = current_channel;
                 pcfg.encrypt = false;
                 esp_now_add_peer(&pcfg);
+            } else {
+                esp_now_peer_info_t existing={0};
+                if (esp_now_get_peer(mac,&existing)==ESP_OK && existing.channel != current_channel){
+                    existing.channel=current_channel;
+                    esp_now_mod_peer(&existing);
+                }
             }
 
             char ms[18];
@@ -522,15 +529,15 @@ static void wifi_init(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
     wifi_config_t sta_cfg = {0};
-    sta_cfg.sta.channel = ESPNOW_CHANNEL;
+    sta_cfg.sta.channel = current_channel;
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_cfg));
     ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE));
+    ESP_ERROR_CHECK(esp_wifi_set_channel(current_channel, WIFI_SECOND_CHAN_NONE));
 
     ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, my_mac));
     char ms[18];
     mac_to_str(my_mac, ms);
-    ESP_LOGI(TAG, "Node MAC: %s on channel %d", ms, ESPNOW_CHANNEL);
+    ESP_LOGI(TAG, "Node MAC: %s on channel %d", ms, current_channel);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -728,7 +735,7 @@ static void espnow_init(void)
     /* Broadcast peer for discovery/heartbeat */
     esp_now_peer_info_t bc = {0};
     memcpy(bc.peer_addr, BROADCAST_MAC, 6);
-    bc.channel = ESPNOW_CHANNEL;
+    bc.channel = current_channel;
     bc.encrypt = false;
     ESP_ERROR_CHECK(esp_now_add_peer(&bc));
 

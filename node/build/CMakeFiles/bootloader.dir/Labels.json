@@ -2,34 +2,34 @@
 	"sources" : 
 	[
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/CMakeFiles/bootloader"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/CMakeFiles/bootloader"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/CMakeFiles/bootloader.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/CMakeFiles/bootloader.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/CMakeFiles/bootloader-complete.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/CMakeFiles/bootloader-complete.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
 		},
 		{
-			"file" : "/home/srujan/Desktop/IP3/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+			"file" : "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
 		}
 	],
 	"target" : 
