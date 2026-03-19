@@ -9,7 +9,8 @@ for i in res:
     l.append(i[0])
 
 for i in range(len(l)):
-    res=cur.execute(f"SELECT * FROM {l[i]}");
-    print(list(res))
+    res=cur.execute(f"SELECT * FROM {l[i]}")
+    for i in res:
+        print(i)
 
 conn.close()

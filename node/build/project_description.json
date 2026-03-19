@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "node",
-    "project_version":    "a754113-dirty",
+    "project_version":    "113fe48-dirty",
     "project_path":       "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node",
     "idf_path":           "/home/srujan/.espressif/v5.5.3/esp-idf",
     "build_dir":          "/home/srujan/Desktop/ESP_MESH_MONITORING_NETWORK/node/build",
