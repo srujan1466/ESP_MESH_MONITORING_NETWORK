@@ -15,8 +15,10 @@ for i in res:
     l.append(i[0])
 
 for i in range(len(l)):
-    with open(f"Hello{i}","w") as f:
+    with open(f"Hello{i}.csv","w") as f:
         res=cur.execute(f"SELECT * FROM {l[i]} ")
+        col=[description[0] for description in res.description]
+        f.write(",".join(col)+"\n")
         for i in res:
             print(i)
             f.write(str(i)+"\n")

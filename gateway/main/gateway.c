@@ -61,10 +61,10 @@
 
 /* ─── WiFi Configuration ────────────────────────────────────────────────── */
 /* 😜 = U+1F61C = UTF-8 bytes F0 9F 98 9C                                   */
-#define WIFI_SSID               "Srujuuu\xF0\x9F\x98\x9C"
+#define WIFI_SSID               "Srujuuu"
 #define WIFI_PASS               "14062006"
-#define SERVER_URL              "http://10.237.95.56:5000/api/data"
-#define SERVER_NODE_STATUS_URL  "http://10.237.95.56:5000/api/node_status"
+#define SERVER_URL              "https://10.237.95.56:5000/api/data"
+#define SERVER_NODE_STATUS_URL  "https://10.237.95.56:5000/api/node_status"
 #define MAX_RETRY_CONNECT       10
 
 /* ─── ESP-NOW Configuration ─────────────────────────────────────────────── */
@@ -81,7 +81,7 @@ static const uint8_t BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 #define PIN_NUM_MISO    GPIO_NUM_19
 #define PIN_NUM_MOSI    GPIO_NUM_23
 #define PIN_NUM_CLK     GPIO_NUM_18
-#define PIN_NUM_CS      GPIO_NUM_5
+#define PIN_NUM_CS      GPIO_NUM_15
 #define SD_MOUNT_POINT  "/sdcard"
 #define SPI_DMA_CHAN    SPI_DMA_CH_AUTO
 
@@ -396,21 +396,73 @@ static void wifi_init_sta(void)
 
 /* ─── SD Card Init ──────────────────────────────────────────────────────── */
 
+// static void sd_card_init(void)
+// {
+//     /* Pull up MISO before touching SPI bus — prevents line floating on init */
+//     gpio_pullup_en(PIN_NUM_MISO);
+//     gpio_set_pull_mode(PIN_NUM_MISO, GPIO_PULLUP_ONLY);
+//     gpio_set_pull_mode(PIN_NUM_CS, GPIO_PULLUP_ONLY);
+//     gpio_pullup_en(PIN_NUM_CS);
+
+//     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+//         .format_if_mount_failed = true,
+//         .max_files              = 5,
+//         .allocation_unit_size   = 16 * 1024,
+//     };
+
+//     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+//     host.slot         = SPI2_HOST;
+//     host.max_freq_khz = 400;   /* 4 MHz — compatible with cheap SD modules */
+
+//     spi_bus_config_t bus_cfg = {
+//         .mosi_io_num     = PIN_NUM_MOSI,
+//         .miso_io_num     = PIN_NUM_MISO,
+//         .sclk_io_num     = PIN_NUM_CLK,
+//         .quadwp_io_num   = -1,
+//         .quadhd_io_num   = -1,
+//         .max_transfer_sz = 16 * 1024,
+//     };
+
+//     esp_err_t ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
+//     if (ret != ESP_OK) {
+//         ESP_LOGE(TAG, "SPI bus init failed: %s", esp_err_to_name(ret));
+//         spi_bus_free(host.slot);
+//         return;
+//     }
+
+//     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+//     slot_config.gpio_cs = PIN_NUM_CS;
+//     slot_config.host_id = host.slot;
+
+//     ret = esp_vfs_fat_sdspi_mount(SD_MOUNT_POINT, &host, &slot_config,
+//                                    &mount_config, &sd_card);
+//     if (ret != ESP_OK) {
+//         ESP_LOGE(TAG, "SD mount failed: %s", esp_err_to_name(ret));
+//         sd_card_mounted = false;
+//         return;
+//     }
+
+//     sdmmc_card_print_info(stdout, sd_card);
+//     sd_card_mounted = true;
+//     ESP_LOGI(TAG, "SD card mounted at %s", SD_MOUNT_POINT);
+//     struct stat st;
+//     if (stat(SD_MOUNT_POINT "/data", &st) != 0) {
+//         mkdir(SD_MOUNT_POINT "/data", 0775);
+//     }   
+// }
 static void sd_card_init(void)
 {
-    /* Pull up MISO before touching SPI bus — prevents line floating on init */
-    gpio_pullup_en(PIN_NUM_MISO);
-    gpio_set_pull_mode(PIN_NUM_MISO, GPIO_PULLUP_ONLY);
+    vTaskDelay(pdMS_TO_TICKS(500)); // let HW-125 stabilize after power-on
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .format_if_mount_failed = true,
+        .format_if_mount_failed = false,
         .max_files              = 5,
         .allocation_unit_size   = 16 * 1024,
     };
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot         = SPI2_HOST;
-    host.max_freq_khz = 4000;   /* 4 MHz — compatible with cheap SD modules */
+    host.max_freq_khz = 400;
 
     spi_bus_config_t bus_cfg = {
         .mosi_io_num     = PIN_NUM_MOSI,
@@ -422,9 +474,9 @@ static void sd_card_init(void)
     };
 
     esp_err_t ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CH_AUTO);
-    if (ret != ESP_OK) {
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
         ESP_LOGE(TAG, "SPI bus init failed: %s", esp_err_to_name(ret));
-        spi_bus_free(host.slot);
+        sd_card_mounted = false;
         return;
     }
 
@@ -436,6 +488,7 @@ static void sd_card_init(void)
                                    &mount_config, &sd_card);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "SD mount failed: %s", esp_err_to_name(ret));
+        spi_bus_free(host.slot);
         sd_card_mounted = false;
         return;
     }
@@ -443,12 +496,11 @@ static void sd_card_init(void)
     sdmmc_card_print_info(stdout, sd_card);
     sd_card_mounted = true;
     ESP_LOGI(TAG, "SD card mounted at %s", SD_MOUNT_POINT);
-    struct stat st;
-    if (stat(SD_MOUNT_POINT "/data", &st) != 0) {
-        mkdir(SD_MOUNT_POINT "/data", 0775);
-    }   
-}
 
+    struct stat st;
+    if (stat(SD_MOUNT_POINT "/data", &st) != 0)
+        mkdir(SD_MOUNT_POINT "/data", 0775);
+}
 /* ─── SD Card Logging ───────────────────────────────────────────────────── */
 
 static void log_to_sd(const char *json)
@@ -581,7 +633,7 @@ static bool upload_to_server(const char *json, const char *url)
     esp_http_client_config_t config = {
         .url        = url,
         .method     = HTTP_METHOD_POST,
-        .timeout_ms = 5000,
+        .timeout_ms = 5000
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
